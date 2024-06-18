@@ -4,6 +4,7 @@ namespace App\Repositories;
 
 use App\Interfaces\UserRepositoryInterface;
 use App\Models\User;
+use App\Models\UserPermission;
 use Illuminate\Support\Facades\Hash;
 
 
@@ -11,7 +12,10 @@ class UserRepository implements UserRepositoryInterface
 {
   public function getAllUsers()
   {
-    return User::get();
+    $users = User::with('userPermission.permission')->get();
+
+    //    dd($users[0]->userPermission->permission->name);
+    return $users;
   }
 
   public function getUserPorId($userId)

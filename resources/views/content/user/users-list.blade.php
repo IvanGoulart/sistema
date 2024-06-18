@@ -24,22 +24,24 @@ $active = [
 @section('content')
 <div class="row gy-4">
 
-  <!-- Congratulations card -->
-  <div class="col-md-12 col-lg-4">
-    <div class="card">
-      <div class="card-body">
-        <h4 class="card-title mb-1">Total de Clientes 🎉</h4>
-        <h4 class="text-primary mb-1">{{ count($users) }}</h4>
-      </div>
-      <img src="{{asset('assets/img/icons/misc/triangle-light.png')}}" class="scaleX-n1-rtl position-absolute bottom-0 end-0" width="166" alt="triangle background">
-      <img src="{{asset('assets/img/illustrations/trophy.png')}}" class="scaleX-n1-rtl position-absolute bottom-0 end-0 me-4 mb-4 pb-2" width="40" alt="view sales">
-    </div>
-  </div>
-  <!--/ Congratulations card -->
+	<!-- Congratulations card -->
+	<div class="col-md-12 col-lg-4">
+		<div class="card">
+			<div class="card-body">
+				<h4 class="card-title mb-1">Total de Clientes 🎉</h4>
+				<h4 class="text-primary mb-1">{{ count($users) }}</h4>
+			</div>
+			<img src="{{asset('assets/img/icons/misc/triangle-light.png')}}"
+				class="scaleX-n1-rtl position-absolute bottom-0 end-0" width="166" alt="triangle background">
+			<img src="{{asset('assets/img/illustrations/trophy.png')}}"
+				class="scaleX-n1-rtl position-absolute bottom-0 end-0 me-4 mb-4 pb-2" width="40" alt="view sales">
+		</div>
+	</div>
+	<!--/ Congratulations card -->
 
-  <!-- Transactions -->
+	<!-- Transactions -->
 
-  <!--
+	<!--
   <div class="col-lg-8">
     <div class="card">
       <div class="card-header">
@@ -117,72 +119,85 @@ $active = [
     </div>
   </div>
   -->
-  <!--/ Transactions -->
+	<!--/ Transactions -->
 
-  <!-- Data Tables -->
-  <div class="col-12">
-    <div class="card">
-      @if ($errors->any())
-      <div class="alert alert-danger">
-        <ul>
-          @foreach ($errors->all() as $error)
-          <li>{{ $error }}</li>
-          @endforeach
-        </ul>
-      </div>
-      @endif
-      @if(session('success'))
-      <div class="alert alert-success">
-        {{ session('success') }}
-      </div>
-      @endif
+	<!-- Data Tables -->
+	<div class="col-12">
+		<div class="card">
+			@if ($errors->any())
+			<div class="alert alert-danger">
+				<ul>
+					@foreach ($errors->all() as $error)
+					<li>{{ $error }}</li>
+					@endforeach
+				</ul>
+			</div>
+			@endif
+			@if(session('success'))
+			<div class="alert alert-success">
+				{{ session('success') }}
+			</div>
+			@endif
 
-      <div class="table-responsive">
-        <table class="table">
-          <thead class="table-light">
-            <tr>
-              <th class="text-truncate">Usuario</th>
-              <th class="text-truncate">Email</th>
-              <th class="text-truncate">Permissão</th>
-              <th class="text-truncate">Status</th>
-              <th class="text-truncate">Ação</th>
-            </tr>
-          </thead>
-          <tbody>
+			<div class="table-responsive">
+				<table class="table">
+					<thead class="table-light">
+						<tr>
+							<th class="text-truncate">Usuario</th>
+							<th class="text-truncate">Email</th>
+							<th class="text-truncate">Permissão</th>
+							<th class="text-truncate">Status</th>
+							<th class="text-truncate">Ação</th>
+						</tr>
+					</thead>
+					<tbody>
 
-            @foreach ($users as $user)
-            <tr>
-              <td>
-                <div class="d-flex align-items-center">
-                  <div class="avatar avatar-sm me-3">
-                    <img src="{{asset('assets/img/avatars/1.png')}}" alt="Avatar" class="rounded-circle">
-                  </div>
-                  <div>
-                    <h6 class="mb-0 text-truncate">{{ $user->name }}</h6>
-                    <small class="text-truncate">@amiccoo</small>
-                  </div>
-                </div>
-              </td>
-              <td class="text-truncate">{{ $user->email }}</td>
-              <td class="text-truncate"><i class="mdi mdi-laptop mdi-24px text-danger me-1"></i> Admin</td>
-              <td><span class="badge bg-label-{{$active[$user->active]['cor']}} rounded-pill">{{$active[$user->active]['status']}}</span></td>
-              <td>
-                <div class="dropdown">
-                  <button type="button" class="btn p-0 dropdown-toggle hide-arrow" data-bs-toggle="dropdown" aria-expanded="false"><i class="mdi mdi-dots-vertical"></i></button>
-                  <div class="dropdown-menu" style="">
-                    <a class="dropdown-item waves-effect" href="{{ route('user-edit', ['id' => $user->id]) }}"><i class="mdi mdi-pencil-outline me-1"></i> Editar</a>
-                    <a class="dropdown-item waves-effect" href="{{ route('user-delete', ['id' => $user->id]) }}"><i class="mdi mdi-account-alert-outline"></i> Inativar</a>
-                    <a class="dropdown-item waves-effect" href="{{ route('user-active', ['id' => $user->id]) }}"><i class="mdi mdi-account-outline"></i> Ativar</a>
-                  </div>
-                </div>
-              </td>
-            </tr>
-            @endforeach
-          </tbody>
-        </table>
-      </div>
-    </div>
-  </div>
-  <!--/ Data Tables -->
+						@foreach ($users as $user)
+						<tr>
+							<td>
+								<div class="d-flex align-items-center">
+									<div class="avatar avatar-sm me-3">
+										<img src="{{asset('assets/img/avatars/1.png')}}" alt="Avatar"
+											class="rounded-circle">
+									</div>
+									<div>
+										<h6 class="mb-0 text-truncate">{{ $user->name }}</h6>
+										<small class="text-truncate">@amiccoo</small>
+									</div>
+								</div>
+							</td>
+							<td class="text-truncate">{{ $user->email }}</td>
+							<td class="text-truncate"><i class="mdi mdi-laptop mdi-24px text-danger me-1"></i>
+								{{ $user->userPermission?->permission?->name ?? 'Permission name does not exist.' }}
+							</td>
+							<td><span
+									class="badge bg-label-{{$active[$user->active]['cor']}} rounded-pill">{{$active[$user->active]['status']}}</span>
+							</td>
+							<td>
+								<div class="dropdown">
+									<button type="button" class="btn p-0 dropdown-toggle hide-arrow"
+										data-bs-toggle="dropdown" aria-expanded="false"><i
+											class="mdi mdi-dots-vertical"></i></button>
+									<div class="dropdown-menu" style="">
+										<a class="dropdown-item waves-effect"
+											href="{{ route('user-edit', ['id' => $user->id]) }}"><i
+												class="mdi mdi-pencil-outline me-1"></i> Editar</a>
+										<a class="dropdown-item waves-effect"
+											href="{{ route('user-delete', ['id' => $user->id]) }}"><i
+												class="mdi mdi-account-alert-outline"></i> Inativar</a>
+										<a class="dropdown-item waves-effect"
+											href="{{ route('user-active', ['id' => $user->id]) }}"><i
+												class="mdi mdi-account-outline"></i> Ativar</a>
+									</div>
+								</div>
+							</td>
+						</tr>
+						@endforeach
+					</tbody>
+				</table>
+			</div>
+		</div>
+	</div>
+	<!--/ Data Tables -->
 </div>
 @endsection

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\user;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use App\Interfaces\UserRepositoryInterface;
+use App\Models\Permission;
 
 class UserController extends Controller
 {
@@ -41,6 +42,7 @@ class UserController extends Controller
       'username' => 'required|string|max:255',
       'email' => 'required|string|email|max:255|unique:users',
       'password' => 'required|string|min:8',
+      'permision' => 'required',
     ]);
 
     $this->userRepository->createUser($validatedData);
@@ -62,8 +64,9 @@ class UserController extends Controller
   public function edit(string $id)
   {
     $user = $this->userRepository->getUserPorId($id);
+    $permissions = Permission::get();
 
-    return view('content.authentications.auth-register-basic', ['user' => $user]);
+    return view('content.authentications.auth-register-basic', ['user' => $user, 'permissions' => $permissions]);
   }
 
   /**
