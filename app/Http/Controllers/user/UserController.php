@@ -5,15 +5,17 @@ namespace App\Http\Controllers\user;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use App\Interfaces\UserRepositoryInterface;
-use App\Models\Permission;
+use App\Interfaces\PermissionRepositoryInterface;
 
 class UserController extends Controller
 {
   private UserRepositoryInterface $userRepository;
+  private PermissionRepositoryInterface $permissionRepository;
 
-  public function __construct(UserRepositoryInterface $userRepository)
+  public function __construct(UserRepositoryInterface $userRepository, PermissionRepositoryInterface $permissionRepository)
   {
     $this->userRepository = $userRepository;
+    $this->permissionRepository = $permissionRepository;
   }
 
   /**
@@ -64,9 +66,11 @@ class UserController extends Controller
   public function edit(string $id)
   {
     $user = $this->userRepository->getUserPorId($id);
-    $permissions = Permission::get();
+    $permissions = $this->permissionRepository->getAllPermissions();
 
-    return view('content.authentications.auth-register-basic', ['user' => $user, 'permissions' => $permissions]);
+    $selectedPermissionId = $user->userPermission->code_permission; // Supondo que o usuário tenha uma permissão atribuída
+
+    return view('content.authentications.auth-register-basic', ['user' => $user, 'permissions' => $permissions, 'selectedPermissionId' => $selectedPermissionId]);
   }
 
   /**
@@ -75,6 +79,7 @@ class UserController extends Controller
   public function update(Request $request, int $userId)
   {
     $this->userRepository->updateUser($userId, $request);
+    $this->permissionRepository->updatePermission($userId, $request->permission);
     return back()->with('success', 'Usuário alterado com sucesso.');
   }
 

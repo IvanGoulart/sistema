@@ -50,6 +50,6 @@ class User extends Authenticatable
 
   public function userPermission()
   {
-    return $this->hasOne(UserPermission::class);
+    return $this->hasOne(UserPermission::class, 'user_id', 'id');
   }
 }

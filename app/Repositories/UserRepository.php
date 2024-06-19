@@ -20,7 +20,7 @@ class UserRepository implements UserRepositoryInterface
 
   public function getUserPorId($userId)
   {
-    return User::find($userId);
+    return User::with('userPermission.permission')->find($userId);
   }
 
   public function createUser(array $userData)
@@ -40,7 +40,10 @@ class UserRepository implements UserRepositoryInterface
 
     $user->name = $userRequest->input('username');
     $user->email = $userRequest->input('email');
-    $user->password = $userRequest->input('password');
+    if (!empty($userRequest->input('password'))) {
+      $user->password = $userRequest->input('password');
+    }
+
     return $user->save();
   }
 

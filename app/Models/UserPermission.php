@@ -22,7 +22,7 @@ class UserPermission extends Model
 
   public function user()
   {
-    return $this->belongsTo(User::class);
+    return $this->belongsTo(User::class, 'user_id', 'id');
   }
   /**
    * Define a relationship with the Permission model.
