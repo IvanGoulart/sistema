@@ -48,7 +48,7 @@
               @endif
               @csrf
               <div class="form-floating form-floating-outline mb-3">
-                <input type="text" class="form-control" id="username" name="username" value="{{ old('username', isset($user) ? $user->name : '') }}" placeholder="Enter your username" autofocus>
+                <input type="text" class="form-control" id="name" name="name" value="{{ old('name', isset($user) ? $user->name : '') }}" placeholder="Enter your username" autofocus>
                 <label for="username">Nome</label>
               </div>
               <div class="form-floating form-floating-outline mb-3">
@@ -60,7 +60,7 @@
                 <select class="form-select" id="exampleFormControlSelect1" name="permission" aria-label="Default select example">
                   <option value="" selected="">Permissões</option>
                   @foreach($permissions as $permission)
-                  <option value="{{ $permission->id }}" {{ $selectedPermissionId == $permission->id ? 'selected' : '' }}>
+                  <option value="{{ $permission->id }}" {{isset($selectedPermissionId) && $selectedPermissionId == $permission->id ? 'selected' : '' }}>
                     {{ $permission->name }}
                   </option>
                   @endforeach
@@ -85,6 +85,16 @@
               <span class="app-brand-logo demo">
                 << Voltar</span>
             </a>
+
+
+
+
+
+
+
+
+
+
 
 
 

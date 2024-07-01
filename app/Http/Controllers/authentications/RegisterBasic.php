@@ -11,7 +11,6 @@ class RegisterBasic extends Controller
   public function index()
   {
 
-    dd(Permission::get());
-    //return view('content.authentications.auth-register-basic', ['permissions' => Permission::get()]);
+    return view('content.authentications.auth-register-basic', ['permissions' => Permission::all()]);
   }
 }

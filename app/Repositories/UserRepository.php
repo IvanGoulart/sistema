@@ -23,16 +23,13 @@ class UserRepository implements UserRepositoryInterface
     return User::with('userPermission.permission')->find($userId);
   }
 
-  public function createUser(array $userData)
+  public function createUser(User $userData): User
   {
-    // Criar um novo usuário
-    $user = new User();
-    $user->name = $userData['username'];
-    $user->email = $userData['email'];
-    $user->password = Hash::make($userData['password']);
-    $user->save();
+    //    Criar um novo usuário
+    $userData->password = Hash::make($userData->password);
+    $userData->save();
 
-    return $user;
+    return $userData;
   }
   public function updateUser($userId, object $userRequest): bool
   {

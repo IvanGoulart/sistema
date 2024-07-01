@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use App\Interfaces\UserRepositoryInterface;
 use App\Interfaces\PermissionRepositoryInterface;
+use App\Models\User;
 
 class UserController extends Controller
 {
@@ -41,13 +42,15 @@ class UserController extends Controller
   {
     // Validação dos dados
     $validatedData = $request->validate([
-      'username' => 'required|string|max:255',
+      'name' => 'required|string|max:255',
       'email' => 'required|string|email|max:255|unique:users',
       'password' => 'required|string|min:8',
-      'permision' => 'required',
+      'permission' => 'required',
     ]);
 
-    $this->userRepository->createUser($validatedData);
+    $userData = new User($validatedData);
+
+    $this->userRepository->createUser($userData);
     // Redirecionar para alguma rota após salvar
     return back()->with('success', 'Usuário criado com sucesso!');
   }
