@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Schedule\Interfaces;
+namespace App\Interfaces;
 
 interface PermissionRepositoryInterface
 {
