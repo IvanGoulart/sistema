@@ -23,6 +23,12 @@
           "target": ""
         },
         {
+          "url": "/schedule/create",
+          "name": "Agenda",
+          "slug": "agenda",
+          "target": ""
+        },
+        {
           "url": "https://demos.themeselection.com/materio-bootstrap-html-laravel-admin-template/demo-1/dashboard/crm",
           "name": "CRM",
           "slug": "dashboard-crm",

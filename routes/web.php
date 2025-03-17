@@ -45,6 +45,7 @@ use App\Http\Controllers\pages\AccountSettingsConnections;
 use App\Http\Controllers\pages\AccountSettingsNotifications;
 use App\Http\Controllers\authentications\ForgotPasswordBasic;
 use App\Http\Controllers\user_interface\PaginationBreadcrumbs;
+use App\Http\Controllers\schedule\ScheduleController;
 
 // Main Page Route
 Route::get('/dashboard', [Analytics::class, 'index'])->name('dashboard-analytics');
@@ -62,6 +63,9 @@ Route::get('/user/delete/{id}', [UserController::class, 'destroy'])->name('user-
 Route::get('/user/active/{id}', [UserController::class, 'active'])->name('user-active');
 Route::get('/user/edit/{id}', [UserController::class, 'edit'])->name('user-edit');
 Route::put('/user/update/{id}', [UserController::class, 'update'])->name('user-update');
+
+//schedule
+Route::get('/schedule/create', [ScheduleController::class, 'create'])->name('schedule-create');
 
 // pages
 Route::get('/pages/account-settings-account', [AccountSettingsAccount::class, 'index'])->name('pages-account-settings-account');

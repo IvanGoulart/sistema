@@ -10,7 +10,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 use App\Models\UserPermission;
-
+use App\Models\services\Services;
 
 class User extends Authenticatable
 {
@@ -51,5 +51,11 @@ class User extends Authenticatable
   public function userPermission()
   {
     return $this->hasOne(UserPermission::class, 'user_id', 'id');
+  }
+
+  // Relacionamento com Service (via UserService)
+  public function services()
+  {
+    return $this->belongsToMany(Services::class, 'user_services');
   }
 }
