@@ -5,12 +5,12 @@ namespace App\Repositories;
 use App\Interfaces\Schedule\ScheduleRepositoryInterface;
 use App\Models\schedule\Schedule;
 
-class PermissionRepository implements ScheduleRepositoryInterface
+class ScheduleRepository implements ScheduleRepositoryInterface
 {
 
-  public function createSchedule(array $data)
+  public function createSchedule(array $scheduleData)
   {
-    return Schedule::create($data);
+    dd($scheduleData);
   }
 
   public function getSchedules()

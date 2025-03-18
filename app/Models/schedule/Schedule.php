@@ -14,7 +14,6 @@ class Schedule extends Model
     'client_id',
     'service_id',
     'day',
-    'cancel',
-    'cancel',
+    'cancel'
   ];
 }
