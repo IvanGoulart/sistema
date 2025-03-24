@@ -10,8 +10,10 @@ class FormCreateAgenda extends Component
 {
   public $selectedService;   // ID do serviço selecionado
   public $services = [];     // Lista de serviços
-  public $users = [];        // Lista de usuários relacionados ao serviço
-  public $selectedUser;      // ID do usuário selecionado
+  public $employees = [];        // Lista de usuários relacionados ao serviço
+  public $selectedEmployee;      // ID do usuário selecionado
+  public $selectedHour;        // Hora selecionada
+  public $selectedDay;         // Dia selecionado
 
   //private $scheduleRepository;
 
@@ -25,9 +27,10 @@ class FormCreateAgenda extends Component
   {
     if ($this->selectedService) {
       $service = Services::with('users')->find($this->selectedService);
-      $this->users = $service ? $service->users : [];
+
+      $this->employees = $service ? $service->users : [];
     } else {
-      $this->users = [];
+      $this->employees = [];
     }
   }
 
@@ -36,23 +39,30 @@ class FormCreateAgenda extends Component
   {
     $validated = $this->validate([
       'selectedService' => 'required|exists:services,id',
-      'selectedUser' => 'required|exists:users,id',
+      'selectedEmployee' => 'required|exists:users,id',
     ]);
+
+
+
     // Verifica se o repositório foi injetado corretamente
     if (is_null($scheduleRepository)) {
       throw new \Exception('ScheduleRepository não foi injetado corretamente.');
     }
 
+    //dd($this->selectedService);
     $scheduleData = [
       'service_id' => $this->selectedService,
-      'user_id' => $this->selectedUser,
-      // Adicione outros campos necessários aqui
+      'employee_id' => $this->selectedEmployee,
+      'client_id' => auth()->user()->id,
+      'day' => $this->selectedDay,
+      'hour' => $this->selectedHour,
+      'cancel' => false,
     ];
 
     $scheduleRepository->createSchedule($scheduleData);
 
     session()->flash('message', 'Agenda salva com sucesso!');
-    $this->reset(['selectedService', 'selectedUser']);
+    $this->reset(['selectedService', 'selectedEmployee']);
   }
 
   // Renderiza a view
