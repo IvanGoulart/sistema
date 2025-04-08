@@ -152,47 +152,43 @@ $active = [
 					</thead>
 					<tbody>
 
-						@foreach ($users as $user)
-						<tr>
-							<td>
-								<div class="d-flex align-items-center">
-									<div class="avatar avatar-sm me-3">
-										<img src="{{asset('assets/img/avatars/1.png')}}" alt="Avatar"
-											class="rounded-circle">
-									</div>
-									<div>
-										<h6 class="mb-0 text-truncate">{{ $user->name }}</h6>
-										<small class="text-truncate">@amiccoo</small>
-									</div>
-								</div>
-							</td>
-							<td class="text-truncate">{{ $user->email }}</td>
-							<td class="text-truncate"><i class="mdi mdi-laptop mdi-24px text-danger me-1"></i>
-								{{ $user->userPermission?->permission?->name ?? 'Permission name does not exist.' }}
-							</td>
-							<td><span
-									class="badge bg-label-{{$active[$user->active]['cor']}} rounded-pill">{{$active[$user->active]['status']}}</span>
-							</td>
-							<td>
-								<div class="dropdown">
-									<button type="button" class="btn p-0 dropdown-toggle hide-arrow"
-										data-bs-toggle="dropdown" aria-expanded="false"><i
-											class="mdi mdi-dots-vertical"></i></button>
-									<div class="dropdown-menu" style="">
-										<a class="dropdown-item waves-effect"
-											href="{{ route('user-edit', ['id' => $user->id]) }}"><i
-												class="mdi mdi-pencil-outline me-1"></i> Editar</a>
-										<a class="dropdown-item waves-effect"
-											href="{{ route('user-delete', ['id' => $user->id]) }}"><i
-												class="mdi mdi-account-alert-outline"></i> Inativar</a>
-										<a class="dropdown-item waves-effect"
-											href="{{ route('user-active', ['id' => $user->id]) }}"><i
-												class="mdi mdi-account-outline"></i> Ativar</a>
-									</div>
-								</div>
-							</td>
-						</tr>
-						@endforeach
+          @if (isset($users) && count($users) > 0)
+            @foreach ($users as $user)
+              <tr>
+                <td>
+                  <div class="d-flex align-items-center">
+                    <div class="avatar avatar-sm me-3">
+                      <img src="{{asset('assets/img/avatars/1.png')}}" alt="Avatar" class="rounded-circle">
+                    </div>
+                    <div>
+                      <h6 class="mb-0 text-truncate">{{ $user->name }}</h6>
+                      <small class="text-truncate">@amiccoo</small>
+                    </div>
+                  </div>
+                </td>
+                <td class="text-truncate">{{ $user->email }}</td>
+                <td class="text-truncate"><i class="mdi mdi-laptop mdi-24px text-danger me-1"></i>
+                  {{ $user->userPermission?->permission?->name ?? 'Permission name does not exist.' }}
+                </td>
+                <td><span class="badge bg-label-{{$active[$user->active]['cor']}} rounded-pill">{{$active[$user->active]['status']}}</span>
+                </td>
+                <td>
+                  <div class="dropdown">
+                    <button type="button" class="btn p-0 dropdown-toggle hide-arrow" data-bs-toggle="dropdown" aria-expanded="false"><i class="mdi mdi-dots-vertical"></i></button>
+                    <div class="dropdown-menu" style="">
+                      <a class="dropdown-item waves-effect" href="{{ route('user-edit', ['id' => $user->id]) }}"><i class="mdi mdi-pencil-outline me-1"></i> Editar</a>
+                      <a class="dropdown-item waves-effect" href="{{ route('user-delete', ['id' => $user->id]) }}"><i class="mdi mdi-account-alert-outline"></i> Inativar</a>
+                      <a class="dropdown-item waves-effect" href="{{ route('user-active', ['id' => $user->id]) }}"><i class="mdi mdi-account-outline"></i> Ativar</a>
+                    </div>
+                  </div>
+                </td>
+              </tr>
+            @endforeach
+          @else
+            <tr>
+              <td colspan="5" class="text-center">Nenhum usuário encontrado.</td>
+            </tr>
+          @endif
 					</tbody>
 				</table>
 			</div>

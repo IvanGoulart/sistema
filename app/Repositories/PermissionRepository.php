@@ -12,16 +12,18 @@ class PermissionRepository implements PermissionRepositoryInterface
   {
     $permissions = Permission::get();
 
-    //    dd($users[0]->userPermission->permission->name);
     return $permissions;
   }
 
   public function updatePermission($userId, int $permissionCode)
   {
-    UserPermission::updateOrCreate([
-      'user_id'   => $userId,
-    ], [
-      'code_permission' => $permissionCode
-    ]);
+    UserPermission::updateOrCreate(
+      [
+        'user_id' => $userId,
+      ],
+      [
+        'code_permission' => $permissionCode,
+      ]
+    );
   }
 }

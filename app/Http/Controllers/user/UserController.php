@@ -13,8 +13,10 @@ class UserController extends Controller
   private UserRepositoryInterface $userRepository;
   private PermissionRepositoryInterface $permissionRepository;
 
-  public function __construct(UserRepositoryInterface $userRepository, PermissionRepositoryInterface $permissionRepository)
-  {
+  public function __construct(
+    UserRepositoryInterface $userRepository,
+    PermissionRepositoryInterface $permissionRepository
+  ) {
     $this->userRepository = $userRepository;
     $this->permissionRepository = $permissionRepository;
   }
@@ -69,11 +71,16 @@ class UserController extends Controller
   public function edit(string $id)
   {
     $user = $this->userRepository->getUserPorId($id);
+
     $permissions = $this->permissionRepository->getAllPermissions();
 
     $selectedPermissionId = $user->userPermission->code_permission; // Supondo que o usuário tenha uma permissão atribuída
 
-    return view('content.authentications.auth-register-basic', ['user' => $user, 'permissions' => $permissions, 'selectedPermissionId' => $selectedPermissionId]);
+    return view('content.authentications.auth-register-basic', [
+      'user' => $user,
+      'permissions' => $permissions,
+      'selectedPermissionId' => $selectedPermissionId,
+    ]);
   }
 
   /**
@@ -99,7 +106,9 @@ class UserController extends Controller
 
     $this->userRepository->setActive($user);
 
-    return redirect()->route('users-list')->with('success', 'Usuário ativado com sucesso.');
+    return redirect()
+      ->route('users-list')
+      ->with('success', 'Usuário ativado com sucesso.');
   }
 
   /**
@@ -115,6 +124,8 @@ class UserController extends Controller
 
     $this->userRepository->setInactive($user);
 
-    return redirect()->route('users-list')->with('success', 'Usuário inativado com sucesso.');
+    return redirect()
+      ->route('users-list')
+      ->with('success', 'Usuário inativado com sucesso.');
   }
 }

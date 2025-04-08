@@ -7,14 +7,14 @@ use App\Models\User;
 use App\Models\UserPermission;
 use Illuminate\Support\Facades\Hash;
 
-
 class UserRepository implements UserRepositoryInterface
 {
   public function getAllUsers()
   {
     $users = User::with('userPermission.permission')->get();
 
-    //    dd($users[0]->userPermission->permission->name);
+    // dd($users);
+
     return $users;
   }
 
@@ -26,7 +26,7 @@ class UserRepository implements UserRepositoryInterface
   public function createUser(User $userData): User
   {
     //    Criar um novo usuário
-    $userData->password = Hash::make($userData->password);
+    $userData->password = $userData->password;
     $userData->save();
 
     return $userData;
@@ -35,7 +35,7 @@ class UserRepository implements UserRepositoryInterface
   {
     $user = User::findOrFail($userId);
 
-    $user->name = $userRequest->input('username');
+    $user->name = $userRequest->input('name');
     $user->email = $userRequest->input('email');
     if (!empty($userRequest->input('password'))) {
       $user->password = $userRequest->input('password');
