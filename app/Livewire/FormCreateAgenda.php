@@ -8,15 +8,14 @@ use App\Interfaces\Schedule\ScheduleRepositoryInterface;
 
 class FormCreateAgenda extends Component
 {
-  public $selectedService;   // ID do serviço selecionado
-  public $services = [];     // Lista de serviços
-  public $employees = [];        // Lista de usuários relacionados ao serviço
-  public $selectedEmployee;      // ID do usuário selecionado
-  public $selectedHour;        // Hora selecionada
-  public $selectedDay;         // Dia selecionado
+  public $selectedService; // ID do serviço selecionado
+  public $services = []; // Lista de serviços
+  public $employees = []; // Lista de usuários relacionados ao serviço
+  public $selectedEmployee; // ID do usuário selecionado
+  public $selectedHour; // Hora selecionada
+  public $selectedDay; // Dia selecionado
 
   //private $scheduleRepository;
-
 
   public function mount()
   {
@@ -41,8 +40,6 @@ class FormCreateAgenda extends Component
       'selectedService' => 'required|exists:services,id',
       'selectedEmployee' => 'required|exists:users,id',
     ]);
-
-
 
     // Verifica se o repositório foi injetado corretamente
     if (is_null($scheduleRepository)) {

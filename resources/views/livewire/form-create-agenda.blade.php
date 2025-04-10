@@ -7,7 +7,7 @@
     <select id="service" class="form-select" wire:model="selectedService" wire:change="updateUsers">
       <option value="">Selecione um serviço</option>
       @foreach($services as $service)
-      <option value="{{ $service->id }}">{{ $service->nome }}</option>
+      <option value="{{ $service->id }}">{{ $service->name }}</option>
       @endforeach
     </select>
   </div>
