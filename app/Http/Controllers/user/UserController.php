@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Interfaces\UserRepositoryInterface;
 use App\Interfaces\PermissionRepositoryInterface;
 use App\Models\User;
+use App\Models\UserPermission;
 
 class UserController extends Controller
 {
@@ -50,9 +51,15 @@ class UserController extends Controller
       'permission' => 'required',
     ]);
 
-    $userData = new User($validatedData);
+    $userData = new User([
+        'name' => $validatedData['name'],
+        'email' => $validatedData['email'],
+        'password' => bcrypt($validatedData['password']),
+    ]);
 
-    $this->userRepository->createUser($userData);
+    $userCreate = $this->userRepository->createUser($userData);
+    $this->permissionRepository->createPermission($userCreate->id, $validatedData['permission']);
+
     // Redirecionar para alguma rota após salvar
     return back()->with('success', 'Usuário criado com sucesso!');
   }

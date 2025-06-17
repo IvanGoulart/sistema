@@ -26,4 +26,13 @@ class PermissionRepository implements PermissionRepositoryInterface
       ]
     );
   }
+
+  public function createPermission(int $userId, int $permissionCode): bool
+  {
+    $userPermission = new UserPermission();
+    $userPermission->user_id = $userId;
+    $userPermission->code_permission = $permissionCode;
+
+    return $userPermission->save();
+  }
 }

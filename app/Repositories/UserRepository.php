@@ -25,8 +25,6 @@ class UserRepository implements UserRepositoryInterface
 
   public function createUser(User $userData): User
   {
-    //    Criar um novo usuário
-    $userData->password = $userData->password;
     $userData->save();
 
     return $userData;
