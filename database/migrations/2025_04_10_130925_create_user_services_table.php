@@ -16,7 +16,7 @@ class CreateUserServicesTable extends Migration
     Schema::create('user_services', function (Blueprint $table) {
       $table->id();
       $table->unsignedBigInteger('user_id');
-      $table->unsignedBigInteger('service_id');
+      $table->unsignedBigInteger('services_id');
       $table->timestamps();
 
       // Foreign key constraints

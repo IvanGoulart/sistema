@@ -48,7 +48,7 @@
               @endif
               @csrf
               <div class="form-floating form-floating-outline mb-3">
-                <input type="text" class="form-control" id="name" name="name" value="{{ old('name', isset($user) ? $user->name : '') }}" placeholder="Enter your username" autofocus>
+                <input type="text" class="form-control" id="name" name="name" value="{{ old('name', isset($user) ? $user->name : '') }}" placeholder="Enter your username" autofocus autocomplete="off">
                 <label for="username">Nome</label>
               </div>
               <div class="form-floating form-floating-outline mb-3">

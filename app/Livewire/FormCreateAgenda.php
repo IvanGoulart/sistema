@@ -4,6 +4,7 @@ namespace App\Livewire;
 
 use Livewire\Component;
 use App\Models\services\Services;
+use App\Models\schedule\AvaliableEmployeeSchedule;
 use App\Interfaces\Schedule\ScheduleRepositoryInterface;
 
 class FormCreateAgenda extends Component
@@ -14,6 +15,7 @@ class FormCreateAgenda extends Component
   public $selectedEmployee; // ID do usuário selecionado
   public $selectedHour; // Hora selecionada
   public $selectedDay; // Dia selecionado
+  public $scheduleEmployeeAvailable; // Lista de usuários disponíveis para o serviço selecionado
 
   //private $scheduleRepository;
 
@@ -31,6 +33,21 @@ class FormCreateAgenda extends Component
     } else {
       $this->employees = [];
     }
+  }
+
+    // Atualiza a lista de usuários com base no serviço selecionado
+  public function listEmployeeAvailable()
+  {
+    if ($this->selectedDay) {
+
+       $this->scheduleEmployeeAvailable = AvaliableEmployeeSchedule::where('employee_id', $this->selectedEmployee)
+        ->where('date', $this->selectedDay)
+        ->get();
+    } else {
+      $this->scheduleEmployeeAvailable = [];
+    }
+
+    dd($this->scheduleEmployeeAvailable ?? []);
   }
 
   // Salva a agenda

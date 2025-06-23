@@ -26,13 +26,8 @@
   </div>
   <div class="mb-3">
     <label for="day" class="form-label">Selecione uma data:</label>
-    <input type="date" id="day" class="form-control" wire:model="selectedDay">
+    <input type="date" id="day" class="form-control" wire:model="selectedDay" wire:change="listEmployeeAvailable">
   </div>
-  <div class="mb-3">
-    <label for="hour" class="form-label">Selecione um horário:</label>
-    <input type="time" id="hour" class="form-control" wire:model="selectedHour">
-  </div>
-
   <div class="container my-5">
     <h2>Horários Disponíveis para Agendamento</h2>
     <ul class="list-group">

@@ -24,4 +24,9 @@ class ScheduleRepository implements ScheduleRepositoryInterface
   {
     return Schedule::all();
   }
+  public function getScheduleEmployeeAvailableById(int $id)
+  {
+    return Schedule::where('employee_id', $id)->get();
+  }
+
 }
