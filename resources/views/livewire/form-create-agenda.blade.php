@@ -31,10 +31,17 @@
   <div class="container my-5">
     <h2>Horários Disponíveis para Agendamento</h2>
     <ul class="list-group">
-      <li class="list-group-item d-flex justify-content-between align-items-center">
-        '09:00 - 10:00',
-        <button class="btn btn-primary btn-sm">Agendar</button>
-        <span class="badge bg-secondary">Indisponível</span>
+      @if(isset($scheduleEmployeeAvailable) && count($scheduleEmployeeAvailable) > 0)
+        @foreach($scheduleEmployeeAvailable as $available)
+        <li class="list-group-item d-flex justify-content-between align-items-center">
+          {{ $available['start_time'] }} - {{ $available['end_time'] }}
+          <button class="btn btn-primary btn-sm" wire:click="selectSchedule('{{ $available['start_time'] }}', '{{ $available['end_time'] }}')">Agendar</button>
+        @endforeach
+      @else
+        <li class="list-group-item d-flex justify-content-between align-items-center">
+          Nenhum horário disponível.
+        </li>
+      @endif
       </li>
     </ul>
   </div>

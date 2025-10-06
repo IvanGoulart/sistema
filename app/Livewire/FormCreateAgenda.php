@@ -26,28 +26,37 @@ class FormCreateAgenda extends Component
   // Atualiza a lista de usuários com base no serviço selecionado
   public function updateUsers()
   {
+    $this->selectedEmployee = null; // Reseta o usuário selecionado
+    $this->scheduleEmployeeAvailable = []; // Reseta a lista de horários disponíveis
+    $this->selectedHour = null; // Reseta a hora selecionada
+    $this->selectedDay = null; // Reseta o dia selecionado
+    $this->employees = []; // Reseta a lista de funcionários
+
+
+    // Verifica o estado atual de selectedService
+    // Se selectedService estiver definido, busca os usuários relacionados ao serviço
     if ($this->selectedService) {
+
+      $this->scheduleEmployeeAvailable = [];
+
       $service = Services::with('users')->find($this->selectedService);
 
       $this->employees = $service ? $service->users : [];
     } else {
+      // Se selectedService não estiver definido, limpa a lista de funcionários
       $this->employees = [];
     }
   }
-
-    // Atualiza a lista de usuários com base no serviço selecionado
   public function listEmployeeAvailable()
   {
     if ($this->selectedDay) {
-
-       $this->scheduleEmployeeAvailable = AvaliableEmployeeSchedule::where('employee_id', $this->selectedEmployee)
+      $json = AvaliableEmployeeSchedule::where('employee_id', $this->selectedEmployee)
         ->where('date', $this->selectedDay)
         ->get();
-    } else {
-      $this->scheduleEmployeeAvailable = [];
+
+      $this->scheduleEmployeeAvailable = json_decode($json, true);
     }
 
-    dd($this->scheduleEmployeeAvailable ?? []);
   }
 
   // Salva a agenda
