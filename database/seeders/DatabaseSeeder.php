@@ -15,7 +15,9 @@ class DatabaseSeeder extends Seeder
       PermissionsTableSeeder::class,
       UsersTableSeeder::class,
       ServiceSeeder::class,
-      UserPermissionsSeeder::class
+      UserPermissionsSeeder::class,
+      UserServiceSeeder::class,
+      AvailableEmployeeScheduleSeeder::class
     ]);
   }
 }

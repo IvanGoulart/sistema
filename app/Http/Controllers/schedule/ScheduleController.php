@@ -3,7 +3,9 @@
 namespace App\Http\Controllers\schedule;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
+use Carbon\Carbon;
+use App\Models\schedule\AvailableEmployeeSchedule;
+use App\Models\Schedule;
 
 class ScheduleController extends Controller
 {
@@ -20,43 +22,41 @@ class ScheduleController extends Controller
     return view('content.schedule.schedule-create');
   }
 
-  /**
-   * Store a newly created resource in storage.
-   */
-  public function store(Request $request)
+  public function getFreeHours(int $employeeId, string $date, int $slotMinutes = 30): array
   {
-    //
-  }
+    // 1) janelas disponíveis do dia
+    $windows = AvailableEmployeeSchedule::where('employee_id', $employeeId)
+      ->where('date', $date)
+      ->get(['start_time', 'end_time']);
 
-  /**
-   * Display the specified resource.
-   */
-  public function show(string $id)
-  {
-    //
-  }
+    // 2) horários já agendados (não cancelados)
+    $booked = Schedule::where('employee_id', $employeeId)
+      ->where('day', $date)
+      ->where('cancel', false)
+      ->pluck('hour')
+      ->map(fn($t) => Carbon::parse($t)->format('H:i'))
+      ->toArray();
 
-  /**
-   * Show the form for editing the specified resource.
-   */
-  public function edit(string $id)
-  {
-    //
-  }
+    $free = [];
 
-  /**
-   * Update the specified resource in storage.
-   */
-  public function update(Request $request, string $id)
-  {
-    //
-  }
+    foreach ($windows as $w) {
+      $start = Carbon::parse($w->start_time);
+      $end   = Carbon::parse($w->end_time);
 
-  /**
-   * Remove the specified resource from storage.
-   */
-  public function destroy(string $id)
-  {
-    //
+      // gera slots: ex 08:00, 08:30, 09:00...
+      for ($t = $start->copy(); $t->lt($end); $t->addMinutes($slotMinutes)) {
+        $hhmm = $t->format('H:i');
+
+        if (!in_array($hhmm, $booked, true)) {
+          $free[] = $hhmm;
+        }
+      }
+    }
+
+    // remove duplicados e ordena
+    $free = array_values(array_unique($free));
+    sort($free);
+
+    return $free;
   }
 }

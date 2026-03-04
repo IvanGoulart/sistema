@@ -17,4 +17,19 @@ class Schedule extends Model
     'hour',
     'cancel'
   ];
+
+  public function employee()
+  {
+    return $this->belongsTo(User::class, 'employee_id');
+  }
+
+  public function client()
+  {
+    return $this->belongsTo(User::class, 'client_id');
+  }
+
+  public function service()
+  {
+    return $this->belongsTo(\App\Models\services\Services::class, 'service_id');
+  }
 }

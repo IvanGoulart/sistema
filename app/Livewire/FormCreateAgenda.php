@@ -3,80 +3,122 @@
 namespace App\Livewire;
 
 use Livewire\Component;
+use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
 use App\Models\services\Services;
-use App\Models\schedule\AvaliableEmployeeSchedule;
+use App\Models\schedule\AvailableEmployeeSchedule;
 use App\Interfaces\Schedule\ScheduleRepositoryInterface;
 
 class FormCreateAgenda extends Component
 {
-  public $selectedService; // ID do serviço selecionado
-  public $services = []; // Lista de serviços
-  public $employees = []; // Lista de usuários relacionados ao serviço
-  public $selectedEmployee; // ID do usuário selecionado
-  public $selectedHour; // Hora selecionada
-  public $selectedDay; // Dia selecionado
-  public $scheduleEmployeeAvailable; // Lista de usuários disponíveis para o serviço selecionado
-
-  //private $scheduleRepository;
+  public $selectedService;
+  public $services = [];
+  public $employees = [];
+  public $selectedEmployee;
+  public $selectedHour;
+  public $selectedDay;
+  public $scheduleEmployeeAvailable = [];
 
   public function mount()
   {
     $this->services = Services::all();
   }
-  // Atualiza a lista de usuários com base no serviço selecionado
+
   public function updateUsers()
   {
-    $this->selectedEmployee = null; // Reseta o usuário selecionado
-    $this->scheduleEmployeeAvailable = []; // Reseta a lista de horários disponíveis
-    $this->selectedHour = null; // Reseta a hora selecionada
-    $this->selectedDay = null; // Reseta o dia selecionado
-    $this->employees = []; // Reseta a lista de funcionários
+    $this->selectedEmployee = null;
+    $this->scheduleEmployeeAvailable = [];
+    $this->selectedHour = null;
+    $this->selectedDay = null;
+    $this->employees = [];
 
-
-    // Verifica o estado atual de selectedService
-    // Se selectedService estiver definido, busca os usuários relacionados ao serviço
     if ($this->selectedService) {
-
-      $this->scheduleEmployeeAvailable = [];
-
       $service = Services::with('users')->find($this->selectedService);
-
       $this->employees = $service ? $service->users : [];
-    } else {
-      // Se selectedService não estiver definido, limpa a lista de funcionários
-      $this->employees = [];
     }
   }
+
   public function listEmployeeAvailable()
   {
-    if ($this->selectedDay) {
-      $json = AvaliableEmployeeSchedule::where('employee_id', $this->selectedEmployee)
-        ->where('date', $this->selectedDay)
-        ->get();
+    $this->scheduleEmployeeAvailable = [];
+    $this->selectedHour = null;
 
-      $this->scheduleEmployeeAvailable = json_decode($json, true);
+    if (!$this->selectedEmployee || !$this->selectedDay) {
+      return;
     }
 
+    // 1) janelas disponíveis do dia
+    $windows = AvailableEmployeeSchedule::where('employee_id', $this->selectedEmployee)
+      ->where('date', $this->selectedDay)
+      ->get(['start_time', 'end_time']);
+
+    if ($windows->isEmpty()) {
+      return;
+    }
+
+    // 2) horários já agendados (não cancelados)
+    $booked = DB::table('schedules')
+      ->where('employee_id', $this->selectedEmployee)
+      ->where('day', $this->selectedDay)
+      ->where('cancel', false)
+      ->pluck('hour')
+      ->map(fn($t) => Carbon::parse($t)->format('H:i'))
+      ->toArray();
+
+    // 3) gerar slots (ex.: 30 min)
+    $slotMinutes = 30;
+    $free = [];
+
+    foreach ($windows as $w) {
+      $start = Carbon::parse($w->start_time);
+      $end   = Carbon::parse($w->end_time);
+
+      for ($t = $start->copy(); $t->lt($end); $t->addMinutes($slotMinutes)) {
+        $hhmm = $t->format('H:i');
+        if (!in_array($hhmm, $booked, true)) {
+          $free[] = $hhmm;
+        }
+      }
+    }
+
+    $free = array_values(array_unique($free));
+    sort($free);
+
+    $this->scheduleEmployeeAvailable = $free;
   }
 
-  // Salva a agenda
+  public function selectHour(string $hour)
+  {
+    $this->selectedHour = $hour;
+  }
+
   public function createSchedule(ScheduleRepositoryInterface $scheduleRepository)
   {
-    $validated = $this->validate([
+    $this->validate([
       'selectedService' => 'required|exists:services,id',
       'selectedEmployee' => 'required|exists:users,id',
+      'selectedDay' => 'required|date',
+      'selectedHour' => 'required',
     ]);
 
-    // Verifica se o repositório foi injetado corretamente
-    if (is_null($scheduleRepository)) {
-      throw new \Exception('ScheduleRepository não foi injetado corretamente.');
+    // garante no backend que ainda está livre
+    $exists = DB::table('schedules')
+      ->where('employee_id', $this->selectedEmployee)
+      ->where('day', $this->selectedDay)
+      ->where('hour', $this->selectedHour)
+      ->where('cancel', false)
+      ->exists();
+
+    if ($exists) {
+      $this->addError('selectedHour', 'Esse horário acabou de ser ocupado. Escolha outro.');
+      $this->listEmployeeAvailable();
+      return;
     }
 
-    //dd($this->selectedService);
     $scheduleData = [
       'service_id' => $this->selectedService,
       'employee_id' => $this->selectedEmployee,
-      'client_id' => auth()->user()->id,
+      'client_id' => auth()->id(),
       'day' => $this->selectedDay,
       'hour' => $this->selectedHour,
       'cancel' => false,
@@ -85,10 +127,14 @@ class FormCreateAgenda extends Component
     $scheduleRepository->createSchedule($scheduleData);
 
     session()->flash('message', 'Agenda salva com sucesso!');
-    $this->reset(['selectedService', 'selectedEmployee']);
+
+    // recarrega para o horário sumir da lista
+    $this->listEmployeeAvailable();
+
+    // se quiser resetar tudo:
+    // $this->reset(['selectedService', 'selectedEmployee', 'selectedDay', 'selectedHour', 'scheduleEmployeeAvailable']);
   }
 
-  // Renderiza a view
   public function render()
   {
     return view('livewire.form-create-agenda');

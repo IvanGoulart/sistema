@@ -72,4 +72,11 @@ class User extends Authenticatable
 
     return $this->userPermission->permission->name === $permissionName;
   }
+  public function availableSchedules()
+  {
+    return $this->hasMany(
+      \App\Models\schedule\AvailableEmployeeSchedule::class,
+      'employee_id'
+    );
+  }
 }
