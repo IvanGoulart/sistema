@@ -10,9 +10,13 @@ class Services extends Model
 {
   use HasFactory;
 
-  // Relacionamento com User (via UserService)
   public function users()
   {
-    return $this->belongsToMany(User::class, 'user_services');
+    return $this->belongsToMany(
+      User::class,
+      'user_services',
+      'service_id', // coluna da pivot que referencia services
+      'user_id'     // coluna da pivot que referencia users
+    );
   }
 }

@@ -14,7 +14,7 @@
           "url": "/users/list",
           "name": "Lista de Usuários",
           "slug": "lista-usuario",
-          "target": ""
+          "permission": "admin"
         },
         {
           "url": "/auth/register-basic",

@@ -56,6 +56,20 @@ class User extends Authenticatable
   // Relacionamento com Service (via UserService)
   public function services()
   {
-    return $this->belongsToMany(Services::class, 'user_services');
+    return $this->belongsToMany(
+      \App\Models\services\Services::class,
+      'user_services',
+      'user_id',
+      'service_id'
+    );
+  }
+
+  public function hasPermission(string $permissionName): bool
+  {
+    if (!$this->userPermission) {
+      return false;
+    }
+
+    return $this->userPermission->permission->name === $permissionName;
   }
 }

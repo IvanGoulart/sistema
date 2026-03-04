@@ -12,14 +12,11 @@ class ServiceSeeder extends Seeder
    *
    * @return void
    */
-  public function run()
+  public function run(): void
   {
     DB::table('services')->insert([
-      ['name' => 'Haircut', 'description' => 'Professional haircut service'],
-      ['name' => 'Hair Coloring', 'description' => 'Hair coloring and highlights'],
-      ['name' => 'Manicure', 'description' => 'Manicure and nail care'],
-      ['name' => 'Pedicure', 'description' => 'Pedicure and foot care'],
-      ['name' => 'Facial', 'description' => 'Facial treatments and skincare'],
+      ['name' => 'Serviço A', 'created_at' => now(), 'updated_at' => now()],
+      ['name' => 'Serviço B', 'created_at' => now(), 'updated_at' => now()],
     ]);
   }
 }

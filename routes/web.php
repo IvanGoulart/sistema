@@ -58,14 +58,16 @@ Route::get('/layouts/container', [Container::class, 'index'])->name('layouts-con
 Route::get('/layouts/blank', [Blank::class, 'index'])->name('layouts-blank');
 
 // Users
-Route::get('/users/list', [UserController::class, 'index'])->name('users-list');
-Route::get('/user/delete/{id}', [UserController::class, 'destroy'])->name('user-delete');
-Route::get('/user/active/{id}', [UserController::class, 'active'])->name('user-active');
-Route::get('/user/edit/{id}', [UserController::class, 'edit'])->name('user-edit');
-Route::put('/user/update/{id}', [UserController::class, 'update'])->name('user-update');
-
+Route::middleware(['auth','permission:admin'])->group(function () {
+  Route::get('/users/list', [UserController::class, 'index'])->name('users-list');
+  Route::get('/user/delete/{id}', [UserController::class, 'destroy'])->name('user-delete');
+  Route::get('/user/active/{id}', [UserController::class, 'active'])->name('user-active');
+  Route::get('/user/edit/{id}', [UserController::class, 'edit'])->name('user-edit');
+  Route::put('/user/update/{id}', [UserController::class, 'update'])->name('user-update');
 //schedule
-Route::get('/schedule/create', [ScheduleController::class, 'create'])->name('schedule-create');
+  Route::get('/schedule/create', [ScheduleController::class, 'create'])->name('schedule-create');
+
+});
 
 // pages
 Route::get('/pages/account-settings-account', [AccountSettingsAccount::class, 'index'])->name('pages-account-settings-account');
@@ -78,7 +80,7 @@ Route::get('/pages/misc-under-maintenance', [MiscUnderMaintenance::class, 'index
 Route::get('/', [LoginBasic::class, 'index'])->name('auth-login-basic');
 Route::post('/auth/check-authenticate', [LoginBasic::class, 'checkAuthenticate'])->name('auth-check-authenticate');
 Route::post('/user/create', [UserController::class, 'store'])->name('user-create');
-//Route::get('/logout', [LoginBasic::class, 'logout'])->name('logout');
+Route::get('/logout', [LoginBasic::class, 'logout'])->name('logout');
 Route::get('/auth/register-basic', [RegisterBasic::class, 'index'])->name('auth-register-basic');
 Route::get('/auth/forgot-password-basic', [ForgotPasswordBasic::class, 'index'])->name('auth-reset-password-basic');
 
