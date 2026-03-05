@@ -135,8 +135,41 @@ class FormCreateAgenda extends Component
     // $this->reset(['selectedService', 'selectedEmployee', 'selectedDay', 'selectedHour', 'scheduleEmployeeAvailable']);
   }
 
+
+  public function cancelSchedule($scheduleId)
+  {
+    DB::table('schedules')
+      ->where('id', $scheduleId)
+      ->update([
+        'cancel' => true,
+        'updated_at' => now()
+      ]);
+
+    session()->flash('message', 'Agendamento cancelado com sucesso.');
+
+    $this->listEmployeeAvailable();
+  }
+
+  public function updatedSelectedService()
+  {
+    $this->updateUsers();          // recalcula employees
+    $this->listEmployeeAvailable(); // recalcula horários (vai limpar se faltar dados)
+  }
+
+  public function updatedSelectedEmployee()
+  {
+    $this->listEmployeeAvailable();
+  }
+
+  public function updatedSelectedDay()
+  {
+    $this->listEmployeeAvailable();
+  }
+
   public function render()
   {
     return view('livewire.form-create-agenda');
   }
+
+
 }

@@ -46,6 +46,8 @@ use App\Http\Controllers\pages\AccountSettingsNotifications;
 use App\Http\Controllers\authentications\ForgotPasswordBasic;
 use App\Http\Controllers\user_interface\PaginationBreadcrumbs;
 use App\Http\Controllers\schedule\ScheduleController;
+use App\Http\Controllers\Portal\AuthController;
+use App\Http\Controllers\Portal\PortalController;
 
 // Main Page Route
 Route::get('/dashboard', [Analytics::class, 'index'])->name('dashboard-analytics');
@@ -68,6 +70,25 @@ Route::middleware(['auth','permission:admin'])->group(function () {
   Route::get('/schedule/create', [ScheduleController::class, 'create'])->name('schedule-create');
 
 });
+
+  Route::get('/client/schedule', [ScheduleController::class, 'clientCreate'])
+    ->name('client-schedule-create');
+Route::prefix('portal')->group(function () {
+
+  // Login do portal (somente visitante)
+  Route::middleware('guest')->group(function () {
+    Route::get('/login', [AuthController::class, 'showLogin'])->name('portal.login');
+    Route::post('/login', [AuthController::class, 'login'])->name('portal.login.post');
+  });
+
+  // Rotas do portal (somente cliente logado)
+  Route::middleware(['auth', 'permission:client'])->group(function () {
+    Route::get('/', [PortalController::class, 'home'])->name('portal.home');
+    Route::get('/agendar', [PortalController::class, 'agendar'])->name('portal.agendar');
+    Route::post('/logout', [AuthController::class, 'logout'])->name('portal.logout');
+  });
+});
+
 
 // pages
 Route::get('/pages/account-settings-account', [AccountSettingsAccount::class, 'index'])->name('pages-account-settings-account');

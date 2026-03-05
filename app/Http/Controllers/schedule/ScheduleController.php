@@ -22,6 +22,11 @@ class ScheduleController extends Controller
     return view('content.schedule.schedule-create');
   }
 
+  public function clientCreate()
+  {
+    return view('schedule.client-create');
+  }
+
   public function getFreeHours(int $employeeId, string $date, int $slotMinutes = 30): array
   {
     // 1) janelas disponíveis do dia
