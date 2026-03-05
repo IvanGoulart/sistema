@@ -11,4 +11,5 @@
 
     <livewire:form-create-agenda />
   </div>
+
 @endsection

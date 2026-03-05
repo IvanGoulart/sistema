@@ -64,4 +64,24 @@ class ScheduleController extends Controller
 
     return $free;
   }
+
+  public function loadMySchedules()
+  {
+    $this->mySchedules = DB::table('schedules')
+      ->join('services', 'services.id', '=', 'schedules.service_id')
+      ->join('users as employees', 'employees.id', '=', 'schedules.employee_id')
+      ->where('schedules.client_id', auth()->id())
+      ->where('schedules.cancel', false)
+      ->orderBy('schedules.day')
+      ->orderBy('schedules.hour')
+      ->select([
+        'schedules.id',
+        'schedules.day',
+        'schedules.hour',
+        'services.name as service_name',
+        'employees.name as employee_name',
+      ])
+      ->get()
+      ->toArray();
+  }
 }

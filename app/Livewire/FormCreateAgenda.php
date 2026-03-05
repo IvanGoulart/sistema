@@ -18,12 +18,13 @@ class FormCreateAgenda extends Component
   public $selectedHour;
   public $selectedDay;
   public $scheduleEmployeeAvailable = [];
+  public $mySchedules = [];
 
   public function mount()
   {
     $this->services = Services::all();
+    $this->loadMySchedules();
   }
-
   public function updateUsers()
   {
     $this->selectedEmployee = null;
@@ -128,18 +129,43 @@ class FormCreateAgenda extends Component
 
     session()->flash('message', 'Agenda salva com sucesso!');
 
-    // recarrega para o horário sumir da lista
-    $this->listEmployeeAvailable();
+    $this->loadMySchedules();
+    $this->selectedHour = null;
 
     // se quiser resetar tudo:
     // $this->reset(['selectedService', 'selectedEmployee', 'selectedDay', 'selectedHour', 'scheduleEmployeeAvailable']);
   }
 
+  public function loadMySchedules()
+  {
+    // Se não estiver logado, evita erro
+    if (!auth()->check()) {
+      $this->mySchedules = [];
+      return;
+    }
 
+    $this->mySchedules = DB::table('schedules')
+      ->join('services', 'services.id', '=', 'schedules.service_id')
+      ->join('users as employees', 'employees.id', '=', 'schedules.employee_id')
+      ->where('schedules.client_id', auth()->id())
+      ->where('schedules.cancel', false)
+      ->orderBy('schedules.day')
+      ->orderBy('schedules.hour')
+      ->select([
+        'schedules.id',
+        'schedules.day',
+        'schedules.hour',
+        'services.name as service_name',
+        'employees.name as employee_name',
+      ])
+      ->get()
+      ->toArray();
+  }
   public function cancelSchedule($scheduleId)
   {
     DB::table('schedules')
       ->where('id', $scheduleId)
+      ->where('client_id', auth()->id()) // garante que é do cliente logado
       ->update([
         'cancel' => true,
         'updated_at' => now()
@@ -147,9 +173,9 @@ class FormCreateAgenda extends Component
 
     session()->flash('message', 'Agendamento cancelado com sucesso.');
 
-    $this->listEmployeeAvailable();
+    $this->loadMySchedules();      // atualiza tabela de agendamentos
+    $this->listEmployeeAvailable(); // faz horário voltar a aparecer
   }
-
   public function updatedSelectedService()
   {
     $this->updateUsers();          // recalcula employees

@@ -109,4 +109,52 @@
     </div>
   </div>
 
+  <div class="card shadow-sm mt-4">
+    <div class="card-header bg-light">
+      <h6 class="mb-0">Meus Agendamentos</h6>
+    </div>
+
+    <div class="card-body">
+
+      @if(empty($mySchedules))
+        <div class="alert alert-warning mb-0">Você não tem agendamentos ativos.</div>
+      @else
+        <div class="table-responsive">
+          <table class="table table-striped align-middle mb-0">
+            <thead>
+            <tr>
+              <th>Serviço</th>
+              <th>Profissional</th>
+              <th>Data</th>
+              <th>Hora</th>
+              <th class="text-end">Ação</th>
+            </tr>
+            </thead>
+            <tbody>
+            @foreach($mySchedules as $s)
+              <tr>
+                <td>{{ $s->service_name }}</td>
+                <td>{{ $s->employee_name }}</td>
+                <td>{{ \Carbon\Carbon::parse($s->day)->format('d/m/Y') }}</td>
+                <td>{{ substr($s->hour, 0, 5) }}</td>
+                <td class="text-end">
+                  <button
+                    type="button"
+                    class="btn btn-danger btn-sm"
+                    onclick="return confirm('Deseja cancelar este agendamento?')"
+                    wire:click="cancelSchedule({{ $s->id }})"
+                  >
+                    Cancelar
+                  </button>
+                </td>
+              </tr>
+            @endforeach
+            </tbody>
+          </table>
+        </div>
+      @endif
+
+    </div>
+  </div>
+
 </div>
