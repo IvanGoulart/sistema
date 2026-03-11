@@ -13,10 +13,7 @@ class UserPermission extends Model
 
   protected $table = 'user_permissions';
 
-  protected $fillable = [
-    'code_permission',
-    'user_id',
-  ];
+  protected $fillable = ['tenant_id', 'user_id', 'code_permission'];
 
   public function user()
   {

@@ -15,4 +15,8 @@ class PortalController extends Controller
     {
         return view('portal.agendar');
     }
+
+    public function register(){
+      return view('portal.register');
+    }
 }

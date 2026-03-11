@@ -77,9 +77,10 @@ Route::prefix('portal')->group(function () {
 
   // Login do portal (somente visitante)
   Route::middleware('guest')->group(function () {
-    Route::get('/login', [AuthController::class, 'showLogin'])->name('portal.login');
+    Route::get('/login', [App\Http\Controllers\Portal\AuthController::class, 'showLogin'])->name('portal.login');
     Route::post('/login', [AuthController::class, 'login'])->name('portal.login.post');
-    Route::get('/portal/cadastro', [PortalAuthController::class, 'register'])->name('portal.register');
+    Route::get('/cadastro', [App\Http\Controllers\Portal\AuthController::class, 'showRegister'])->name('portal.cadastro');
+    Route::post('/register', [App\Http\Controllers\Portal\AuthController::class, 'register'])->name('portal.register');
   });
 
   // Rotas do portal (somente cliente logado)
@@ -102,7 +103,7 @@ Route::get('/pages/misc-under-maintenance', [MiscUnderMaintenance::class, 'index
 Route::get('/', [LoginBasic::class, 'index'])->name('auth-login-basic');
 Route::post('/auth/check-authenticate', [LoginBasic::class, 'checkAuthenticate'])->name('auth-check-authenticate');
 Route::post('/user/create', [UserController::class, 'store'])->name('user-create');
-Route::get('/logout', [LoginBasic::class, 'logout'])->name('logout');
+Route::get('/logout', [LoginBasic::class, 'logout'])->name('auth.logout');
 Route::get('/auth/register-basic', [RegisterBasic::class, 'index'])->name('auth-register-basic');
 Route::get('/auth/forgot-password-basic', [ForgotPasswordBasic::class, 'index'])->name('auth-reset-password-basic');
 

@@ -55,4 +55,11 @@ class User extends Authenticatable
       ->where('name', $permissionName)
       ->exists();
   }
+
+  public function tenants()
+  {
+    return $this->belongsToMany(Tenant::class)
+      ->withPivot(['role', 'is_active'])
+      ->withTimestamps();
+  }
 }

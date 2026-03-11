@@ -14,7 +14,7 @@
 
           <div class="card-body">
 
-            <form method="POST" action="{{ route('portal.register.post') }}">
+            <form method="POST" action="{{ route('portal.register') }}">
               @csrf
 
               <div class="mb-3">

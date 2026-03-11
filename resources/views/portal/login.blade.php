@@ -37,7 +37,7 @@
                 Entrar
               </button>
               <div class="text-center mt-3">
-                <a href="{{ route('portal.register') }}">
+                <a href="{{ route('portal.cadastro') }}">
                   Não tem conta? Cadastre-se
                 </a>
               </div>

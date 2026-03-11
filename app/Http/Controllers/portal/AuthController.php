@@ -4,11 +4,15 @@ namespace App\Http\Controllers\Portal;
 
 use App\Http\Controllers\Controller;
 use App\Models\Permission;
+use App\Models\Tenant;
+use App\Models\TenantUser;
+use App\Models\User;
 use App\Models\UserPermission;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use App\Models\User;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 
 class AuthController extends Controller
 {
@@ -57,27 +61,43 @@ class AuthController extends Controller
       'password' => ['required', 'min:6', 'confirmed'],
     ]);
 
-    $user = User::create([
-      'name' => $data['name'],
-      'email' => $data['email'],
-      'password' => Hash::make($data['password']),
-      'active' => 1,
-    ]);
-
-    $permission = Permission::where('name', 'client')->first();
-
-    if ($permission) {
-      UserPermission::create([
-        'user_id' => $user->id,
-        'code_permission' => $permission->id,
+    DB::transaction(function () use ($data, &$user, &$tenant) {
+      $user = User::create([
+        'name' => $data['name'],
+        'email' => $data['email'],
+        'password' => Hash::make($data['password']),
+        'active' => 1,
       ]);
-    }
+
+      $tenant = Tenant::create([
+        'name' => $data['name'],
+        'slug' => Str::slug($data['name']) . '-' . Str::lower(Str::random(5)),
+        'is_active' => true,
+      ]);
+
+      TenantUser::create([
+        'tenant_id' => $tenant->id,
+        'user_id' => $user->id,
+        'role' => 'owner',
+        'is_active' => true,
+      ]);
+
+      $permission = Permission::where('name', 'client')->first();
+
+      if ($permission) {
+        UserPermission::create([
+          'tenant_id' => $tenant->id,
+          'user_id' => $user->id,
+          'code_permission' => $permission->id,
+        ]);
+      }
+    });
 
     Auth::login($user);
+    session(['tenant_id' => $tenant->id]);
 
     return redirect()->route('portal.agendar');
   }
-
   public function logout(Request $request)
   {
     Auth::logout();
