@@ -12,7 +12,9 @@ class ScheduleController extends Controller
   /**
    * Display a listing of the resource.
    */
-  public function index() {}
+  public function index()
+  {
+  }
 
   /**
    * Show the form for creating a new resource.
@@ -25,63 +27,5 @@ class ScheduleController extends Controller
   public function clientCreate()
   {
     return view('schedule.client-create');
-  }
-
-  public function getFreeHours(int $employeeId, string $date, int $slotMinutes = 30): array
-  {
-    // 1) janelas disponíveis do dia
-    $windows = AvailableEmployeeSchedule::where('employee_id', $employeeId)
-      ->where('date', $date)
-      ->get(['start_time', 'end_time']);
-
-    // 2) horários já agendados (não cancelados)
-    $booked = Schedule::where('employee_id', $employeeId)
-      ->where('day', $date)
-      ->where('cancel', false)
-      ->pluck('hour')
-      ->map(fn($t) => Carbon::parse($t)->format('H:i'))
-      ->toArray();
-
-    $free = [];
-
-    foreach ($windows as $w) {
-      $start = Carbon::parse($w->start_time);
-      $end   = Carbon::parse($w->end_time);
-
-      // gera slots: ex 08:00, 08:30, 09:00...
-      for ($t = $start->copy(); $t->lt($end); $t->addMinutes($slotMinutes)) {
-        $hhmm = $t->format('H:i');
-
-        if (!in_array($hhmm, $booked, true)) {
-          $free[] = $hhmm;
-        }
-      }
-    }
-
-    // remove duplicados e ordena
-    $free = array_values(array_unique($free));
-    sort($free);
-
-    return $free;
-  }
-
-  public function loadMySchedules()
-  {
-    $this->mySchedules = DB::table('schedules')
-      ->join('services', 'services.id', '=', 'schedules.service_id')
-      ->join('users as employees', 'employees.id', '=', 'schedules.employee_id')
-      ->where('schedules.client_id', auth()->id())
-      ->where('schedules.cancel', false)
-      ->orderBy('schedules.day')
-      ->orderBy('schedules.hour')
-      ->select([
-        'schedules.id',
-        'schedules.day',
-        'schedules.hour',
-        'services.name as service_name',
-        'employees.name as employee_name',
-      ])
-      ->get()
-      ->toArray();
   }
 }

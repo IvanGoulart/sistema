@@ -79,6 +79,7 @@ Route::prefix('portal')->group(function () {
   Route::middleware('guest')->group(function () {
     Route::get('/login', [AuthController::class, 'showLogin'])->name('portal.login');
     Route::post('/login', [AuthController::class, 'login'])->name('portal.login.post');
+    Route::get('/portal/cadastro', [PortalAuthController::class, 'register'])->name('portal.register');
   });
 
   // Rotas do portal (somente cliente logado)

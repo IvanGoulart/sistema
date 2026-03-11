@@ -33,12 +33,16 @@
                 <input type="password" name="password" class="form-control">
               </div>
 
-              <button class="btn btn-primary w-100">
+              <button class="btn btn-primary w-100 mb-3">
                 Entrar
               </button>
+              <div class="text-center mt-3">
+                <a href="{{ route('portal.register') }}">
+                  Não tem conta? Cadastre-se
+                </a>
+              </div>
 
             </form>
-
           </div>
         </div>
 

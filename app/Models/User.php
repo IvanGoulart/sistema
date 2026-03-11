@@ -2,25 +2,16 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
-
-use App\Http\Controllers\user\UserController;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
-use App\Models\UserPermission;
 use App\Models\services\Services;
 
 class User extends Authenticatable
 {
   use HasApiTokens, HasFactory, Notifiable;
 
-  /**
-   * The attributes that are mass assignable.
-   *
-   * @var array<int, string>
-   */
   protected $fillable = [
     'name',
     'email',
@@ -28,55 +19,40 @@ class User extends Authenticatable
     'active',
   ];
 
-  /**
-   * The attributes that should be hidden for serialization.
-   *
-   * @var array<int, string>
-   */
   protected $hidden = [
     'password',
     'remember_token',
   ];
 
-  /**
-   * The attributes that should be cast.
-   *
-   * @var array<string, string>
-   */
   protected $casts = [
     'email_verified_at' => 'datetime',
     'password' => 'hashed',
   ];
 
-  public function userPermission()
-  {
-    return $this->hasOne(UserPermission::class, 'user_id', 'id');
-  }
-
-  // Relacionamento com Service (via UserService)
   public function services()
   {
     return $this->belongsToMany(
-      \App\Models\services\Services::class,
+      Services::class,
       'user_services',
       'user_id',
       'service_id'
     );
   }
 
+  public function permissions()
+  {
+    return $this->belongsToMany(
+      Permission::class,
+      'user_permissions',
+      'user_id',
+      'code_permission'
+    );
+  }
+
   public function hasPermission(string $permissionName): bool
   {
-    if (!$this->userPermission) {
-      return false;
-    }
-
-    return $this->userPermission->permission->name === $permissionName;
-  }
-  public function availableSchedules()
-  {
-    return $this->hasMany(
-      \App\Models\schedule\AvailableEmployeeSchedule::class,
-      'employee_id'
-    );
+    return $this->permissions()
+      ->where('name', $permissionName)
+      ->exists();
   }
 }

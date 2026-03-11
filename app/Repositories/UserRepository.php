@@ -11,8 +11,7 @@ class UserRepository implements UserRepositoryInterface
 {
   public function getAllUsers()
   {
-    $users = User::with('userPermission.permission')->get();
-
+    $users = User::with('permissions')->get();
     // dd($users);
 
     return $users;
