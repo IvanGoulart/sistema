@@ -16,12 +16,12 @@ class ScheduleRepository implements ScheduleRepositoryInterface
     }
 
     $schedule = new Schedule();
-    $schedule->tenant_id = $tenantId;
-    $schedule->service_id = $scheduleData['service_id'];
+    $schedule->tenant_id   = $tenantId;
+    $schedule->service_id  = $scheduleData['service_id'];
     $schedule->employee_id = $scheduleData['employee_id'];
-    $schedule->client_id = $scheduleData['client_id'];
-    $schedule->day = $scheduleData['day'];
-    $schedule->hour = $scheduleData['hour'];
+    $schedule->client_id   = $scheduleData['client_id'];
+    $schedule->day         = $scheduleData['day'];
+    $schedule->hour        = $scheduleData['hour'];
 
     $schedule->save();
   }
