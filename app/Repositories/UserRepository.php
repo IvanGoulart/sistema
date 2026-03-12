@@ -12,14 +12,13 @@ class UserRepository implements UserRepositoryInterface
   public function getAllUsers()
   {
     $users = User::with('permissions')->get();
-    // dd($users);
 
     return $users;
   }
 
   public function getUserPorId($userId)
   {
-    return User::with('userPermission.permission')->find($userId);
+    return User::with('permissions')->find($userId);
   }
 
   public function createUser(User $userData): User

@@ -29,6 +29,12 @@
           "target": ""
         },
         {
+          "url": "/tenant/create",
+          "name": "Cadastro de Empresa",
+          "slug": "cadastro-empresa",
+          "permission": "admin"
+        },
+        {
           "url": "https://demos.themeselection.com/materio-bootstrap-html-laravel-admin-template/demo-1/dashboard/crm",
           "name": "CRM",
           "slug": "dashboard-crm",

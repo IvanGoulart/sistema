@@ -26,6 +26,6 @@ class ScheduleController extends Controller
 
   public function clientCreate()
   {
-    return view('schedule.client-create');
+    return view('schedule.client-create-1');
   }
 }

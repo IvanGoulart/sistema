@@ -46,6 +46,7 @@ use App\Http\Controllers\user_interface\PaginationBreadcrumbs;
 use App\Http\Controllers\schedule\ScheduleController;
 use App\Http\Controllers\Portal\AuthController;
 use App\Http\Controllers\Portal\PortalController;
+use App\Http\Controllers\Tenant\TenantController;
 
 // Main Page Route
 Route::get('/dashboard', [Analytics::class, 'index'])->name('dashboard-analytics');
@@ -68,6 +69,15 @@ Route::middleware(['auth','permission:admin'])->group(function () {
   Route::get('/schedule/create', [ScheduleController::class, 'create'])->name('schedule-create');
 
 });
+
+Route::middleware(['auth', 'permission:admin'])->prefix('tenant')->group(function () {
+    Route::get('/', [TenantController::class, 'index'])->name('tenants.index');
+    Route::get('/create', [TenantController::class, 'create'])->name('tenants.create');
+    Route::post('/', [TenantController::class, 'store'])->name('tenants.store');
+    Route::get('/{id}/edit', [TenantController::class, 'edit'])->name('tenants.edit');
+    Route::put('/{id}', [TenantController::class, 'update'])->name('tenants.update');
+    Route::delete('/{id}', [TenantController::class, 'destroy'])->name('tenants.destroy');
+  });
 
   Route::get('/client/schedule', [ScheduleController::class, 'clientCreate'])
     ->name('client-schedule-create');
