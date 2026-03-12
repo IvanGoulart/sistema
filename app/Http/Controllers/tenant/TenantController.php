@@ -28,7 +28,7 @@ class TenantController extends Controller
       'name' => 'required|string|max:255',
     ]);
 
-    $tenant = Tenant::create([
+    Tenant::create([
       'name' => $data['name'],
       'slug' => Str::slug($data['name']),
       'is_active' => true
