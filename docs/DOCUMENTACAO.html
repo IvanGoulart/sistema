@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sistema de Agendamento SaaS — Documentação</title>
+<style>
+  :root { --brand: #696cff; --brand-dark: #5558e3; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', Arial, sans-serif; font-size: 13px; color: #333; background: #f8f9fa; }
+
+  .page { max-width: 900px; margin: 0 auto; background: #fff; padding: 48px 56px; }
+
+  /* Capa */
+  .cover { text-align: center; padding: 60px 0 48px; border-bottom: 3px solid var(--brand); margin-bottom: 40px; }
+  .cover .logo { font-size: 2.8rem; font-weight: 800; color: var(--brand); letter-spacing: -1px; }
+  .cover .subtitle { font-size: 1rem; color: #666; margin-top: 8px; }
+  .cover .meta { margin-top: 28px; display: flex; justify-content: center; gap: 32px; }
+  .cover .meta-item { font-size: .85rem; color: #888; }
+  .cover .meta-item strong { display: block; color: #333; font-size: .95rem; }
+
+  /* Títulos */
+  h1 { font-size: 1.6rem; color: var(--brand); border-left: 4px solid var(--brand); padding-left: 14px; margin: 36px 0 16px; }
+  h2 { font-size: 1.15rem; color: #444; margin: 24px 0 10px; font-weight: 700; }
+  h3 { font-size: 1rem; color: #555; margin: 16px 0 8px; font-weight: 600; }
+
+  /* Texto */
+  p { line-height: 1.7; margin-bottom: 10px; color: #555; }
+
+  /* Tabelas */
+  table { width: 100%; border-collapse: collapse; margin: 14px 0; font-size: 12.5px; }
+  th { background: var(--brand); color: #fff; padding: 8px 12px; text-align: left; font-weight: 600; }
+  td { padding: 7px 12px; border-bottom: 1px solid #eee; }
+  tr:nth-child(even) td { background: #f8f9ff; }
+
+  /* Código */
+  pre { background: #1e1e2e; color: #cdd6f4; padding: 16px 18px; border-radius: 8px; font-size: 12px; overflow-x: auto; margin: 12px 0; line-height: 1.6; }
+  code { background: #f0f1ff; color: var(--brand); padding: 2px 6px; border-radius: 4px; font-size: 12px; font-family: 'Consolas', monospace; }
+  pre code { background: none; color: inherit; padding: 0; }
+
+  /* Listas */
+  ul, ol { padding-left: 22px; margin: 8px 0 12px; }
+  li { margin-bottom: 5px; line-height: 1.6; color: #555; }
+
+  /* Cards de destaque */
+  .highlight { background: #f0f1ff; border-left: 4px solid var(--brand); padding: 14px 18px; border-radius: 0 8px 8px 0; margin: 14px 0; }
+  .highlight.warning { background: #fff8e1; border-color: #ffab00; }
+  .highlight.danger  { background: #fff0f0; border-color: #ff3e1d; }
+  .highlight.success { background: #f0fff4; border-color: #28c76f; }
+
+  /* Badge */
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+  .badge-admin    { background: rgba(255,62,29,.15); color: #c0392b; }
+  .badge-employee { background: rgba(255,171,0,.15); color: #a07800; }
+  .badge-client   { background: rgba(3,195,236,.15); color: #0784a8; }
+  .badge-ok       { background: rgba(40,199,111,.15); color: #1a7a45; }
+  .badge-block    { background: rgba(255,62,29,.15); color: #c0392b; }
+
+  /* Divider */
+  hr { border: none; border-top: 1px solid #eee; margin: 32px 0; }
+
+  /* Checklist */
+  .checklist li { list-style: none; padding-left: 4px; }
+  .checklist li::before { content: '☐ '; color: #aaa; }
+
+  /* Print */
+  @media print {
+    body { background: #fff; }
+    .page { padding: 20px 28px; max-width: 100%; }
+    pre { white-space: pre-wrap; word-break: break-word; }
+    h1 { page-break-before: always; }
+    h1:first-of-type { page-break-before: avoid; }
+    .cover { page-break-after: always; }
+    .no-break { page-break-inside: avoid; }
+  }
+
+  .print-btn { position: fixed; bottom: 28px; right: 28px; background: var(--brand); color: #fff; border: none; padding: 12px 22px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; box-shadow: 0 4px 16px rgba(105,108,255,.35); }
+  .print-btn:hover { background: var(--brand-dark); }
+  @media print { .print-btn { display: none; } }
+</style>
+</head>
+<body>
+
+<button class="print-btn" onclick="window.print()">🖨️ Salvar como PDF</button>
+
+<div class="page">
+
+  <!-- CAPA -->
+  <div class="cover">
+    <div class="logo">📅 AgendaSaaS</div>
+    <div class="subtitle">Sistema de Agendamento Multi-Tenant</div>
+    <div class="meta">
+      <div class="meta-item"><strong>Versão</strong>MVP 1.0</div>
+      <div class="meta-item"><strong>Data</strong>Junho / 2026</div>
+      <div class="meta-item"><strong>Autor</strong>IvanGoulart</div>
+      <div class="meta-item"><strong>Stack</strong>Laravel 10 + Livewire 3</div>
+    </div>
+  </div>
+
+  <!-- 1. VISÃO GERAL -->
+  <h1>1. Visão Geral</h1>
+  <p>Sistema SaaS de agendamento de serviços com dois painéis distintos:</p>
+  <ul>
+    <li><strong>Painel Administrativo</strong> — para admins e funcionários gerenciarem agenda, serviços, usuários e disponibilidade</li>
+    <li><strong>Portal do Cliente</strong> — para clientes se cadastrarem, agendarem e acompanharem atendimentos</li>
+  </ul>
+
+  <div class="highlight">
+    <strong>Arquitetura Multi-Tenant:</strong> cada empresa possui seu próprio <code>tenant_id</code>.
+    O isolamento é feito via <code>session('tenant_id') ?? 1</code> em todas as queries de negócio.
+  </div>
+
+  <!-- 2. STACK -->
+  <h1>2. Stack e Infraestrutura</h1>
+  <table>
+    <tr><th>Item</th><th>Tecnologia</th></tr>
+    <tr><td>Backend</td><td>Laravel 10</td></tr>
+    <tr><td>Frontend Reativo</td><td>Livewire 3</td></tr>
+    <tr><td>Banco de Dados</td><td>MySQL 8.4</td></tr>
+    <tr><td>Infraestrutura</td><td>Docker via Laravel Sail</td></tr>
+    <tr><td>CSS Admin</td><td>Bootstrap 5 + Materio Template</td></tr>
+    <tr><td>CSS Portal</td><td>Bootstrap 5 via CDN</td></tr>
+    <tr><td>Ícones</td><td>Material Design Icons (MDI) via CDN</td></tr>
+    <tr><td>Autenticação</td><td>Laravel Auth nativo (sessão)</td></tr>
+  </table>
+
+  <h2>Comandos Docker</h2>
+  <pre>./vendor/bin/sail up -d          # subir containers
+docker compose exec laravel.test bash  # acessar container
+php artisan migrate               # rodar migrations
+php artisan db:seed               # rodar seeders</pre>
+
+  <!-- 3. BANCO DE DADOS -->
+  <h1>3. Estrutura do Banco de Dados</h1>
+  <table>
+    <tr><th>Tabela</th><th>Principais Colunas</th><th>Descrição</th></tr>
+    <tr><td><code>users</code></td><td>id, name, email, password, active</td><td>Todos os perfis (admin, funcionário, cliente)</td></tr>
+    <tr><td><code>permissions</code></td><td>id, name</td><td>admin | employee | client</td></tr>
+    <tr><td><code>user_permissions</code></td><td>tenant_id, user_id, code_permission</td><td>Vínculo usuário ↔ permissão por tenant</td></tr>
+    <tr><td><code>tenants</code></td><td>id, name, slug, email, phone, is_active</td><td>Empresas cadastradas</td></tr>
+    <tr><td><code>tenant_user</code></td><td>tenant_id, user_id, role, is_active</td><td>Vínculo usuário ↔ empresa</td></tr>
+    <tr><td><code>services</code></td><td>id, tenant_id, name, description</td><td>Serviços oferecidos</td></tr>
+    <tr><td><code>user_services</code></td><td>user_id, service_id</td><td>Funcionários por serviço</td></tr>
+    <tr><td><code>schedules</code></td><td>employee_id, client_id, service_id, day, hour, cancel</td><td>Agendamentos</td></tr>
+    <tr><td><code>employee_weekly_schedules</code></td><td>tenant_id, employee_id, day_of_week, start_time, end_time</td><td>Disponibilidade semanal recorrente</td></tr>
+  </table>
+
+  <div class="highlight warning">
+    <strong>Atenção:</strong> <code>day_of_week</code> usa 0=Domingo … 6=Sábado (padrão Carbon/PHP).
+    A disponibilidade é semanal recorrente — não é por data específica.
+  </div>
+
+  <!-- 4. PERMISSÕES -->
+  <h1>4. Sistema de Permissões</h1>
+
+  <h2>Perfis</h2>
+  <ul>
+    <li><span class="badge badge-admin">admin</span> — acesso total ao painel administrativo</li>
+    <li><span class="badge badge-employee">employee</span> — funcionário (funcionalidade futura completa)</li>
+    <li><span class="badge badge-client">client</span> — acesso exclusivo ao portal do cliente</li>
+  </ul>
+
+  <h2>Como acessar permissão do usuário (CORRETO)</h2>
+  <pre>// Em views e controllers — usar a relação belongsToMany correta:
+$user->permissions->first()?->name   // retorna: 'admin', 'employee' ou 'client'
+
+// ERRADO — relação que NÃO existe no model User:
+$user->userPermission->permission->name  // ← gera erro null</pre>
+
+  <h2>Fluxo de Acesso</h2>
+  <table>
+    <tr><th>Usuário</th><th>Acessa /dashboard</th><th>Acessa /portal/agendar</th></tr>
+    <tr><td>Não autenticado</td><td>→ Login admin</td><td>→ Login portal</td></tr>
+    <tr><td><span class="badge badge-admin">admin</span></td><td><span class="badge badge-ok">✓ OK</span></td><td><span class="badge badge-block">403</span></td></tr>
+    <tr><td><span class="badge badge-client">client</span></td><td><span class="badge badge-block">403</span></td><td><span class="badge badge-ok">✓ OK</span></td></tr>
+  </table>
+
+  <!-- 5. ROTAS -->
+  <h1>5. Mapa de Rotas</h1>
+
+  <h2>Públicas</h2>
+  <table>
+    <tr><th>URI</th><th>Nome</th></tr>
+    <tr><td>GET /</td><td>auth-login-basic</td></tr>
+    <tr><td>POST /auth/check-authenticate</td><td>auth-check-authenticate</td></tr>
+    <tr><td>GET /logout</td><td>auth.logout</td></tr>
+  </table>
+
+  <h2>Portal do Cliente (middleware: guest ou auth+permission:client)</h2>
+  <table>
+    <tr><th>URI</th><th>Nome</th><th>Middleware</th></tr>
+    <tr><td>GET /portal/login</td><td>portal.login</td><td>guest</td></tr>
+    <tr><td>POST /portal/login</td><td>portal.login.post</td><td>guest</td></tr>
+    <tr><td>GET /portal/cadastro</td><td>portal.cadastro</td><td>guest</td></tr>
+    <tr><td>POST /portal/register</td><td>portal.register</td><td>guest</td></tr>
+    <tr><td>GET /portal/agendar</td><td>portal.agendar</td><td>auth+client</td></tr>
+    <tr><td>GET /portal/meus-agendamentos</td><td>portal.meus-agendamentos</td><td>auth+client</td></tr>
+    <tr><td>PATCH /portal/cancelar/{id}</td><td>portal.cancelar</td><td>auth+client</td></tr>
+    <tr><td>POST /portal/logout</td><td>portal.logout</td><td>auth+client</td></tr>
+  </table>
+
+  <h2>Painel Admin (middleware: auth + permission:admin)</h2>
+  <table>
+    <tr><th>URI</th><th>Nome</th></tr>
+    <tr><td>GET /dashboard</td><td>dashboard-analytics</td></tr>
+    <tr><td>GET /users/list</td><td>users-list</td></tr>
+    <tr><td>GET /auth/register-basic</td><td>auth-register-basic</td></tr>
+    <tr><td>POST /user/create</td><td>user-create</td></tr>
+    <tr><td>GET /user/edit/{id}</td><td>user-edit</td></tr>
+    <tr><td>PUT /user/update/{id}</td><td>user-update</td></tr>
+    <tr><td>GET /services</td><td>services.index</td></tr>
+    <tr><td>GET /schedule/admin</td><td>schedule.admin</td></tr>
+    <tr><td>GET /schedule/availability</td><td>schedule.availability</td></tr>
+    <tr><td>GET /reports</td><td>reports.index</td></tr>
+    <tr><td>GET /tenant/create</td><td>tenants.create</td></tr>
+  </table>
+
+  <!-- 6. COMPONENTES LIVEWIRE -->
+  <h1>6. Componentes Livewire</h1>
+  <table>
+    <tr><th>Tag</th><th>Arquivo PHP</th><th>Descrição</th></tr>
+    <tr><td><code>services.service-manager</code></td><td>Livewire/Services/ServiceManager.php</td><td>CRUD de serviços + vínculo funcionários</td></tr>
+    <tr><td><code>schedule.admin-agenda</code></td><td>Livewire/Schedule/AdminAgenda.php</td><td>Agenda semanal admin com filtros</td></tr>
+    <tr><td><code>schedule.employee-availability</code></td><td>Livewire/Schedule/EmployeeAvailability.php</td><td>Disponibilidade semanal</td></tr>
+    <tr><td><code>form-create-agenda</code></td><td>Livewire/FormCreateAgenda.php</td><td>Agendamento (admin e portal)</td></tr>
+    <tr><td><code>tenant.form-create-tenant</code></td><td>Livewire/Tenant/FormCreateTenant.php</td><td>CRUD empresas inline</td></tr>
+    <tr><td><code>reports.agenda-report</code></td><td>Livewire/Reports/AgendaReport.php</td><td>Relatório com filtros reativos</td></tr>
+  </table>
+
+  <!-- 7. FUNCIONALIDADES -->
+  <h1>7. Funcionalidades Implementadas</h1>
+
+  <h2>Gestão de Serviços</h2>
+  <ul>
+    <li>CRUD completo via Livewire (sem reload)</li>
+    <li>Vínculo de funcionários por serviço (tabela <code>user_services</code>)</li>
+    <li>Exclusão com confirmação inline Sim/Não</li>
+  </ul>
+
+  <h2>Disponibilidade Semanal</h2>
+  <ul>
+    <li>Grade de 7 dias com toggle on/off por dia</li>
+    <li>Horário início/fim configurável por dia</li>
+    <li>Recorrente — configurar uma vez, vale toda semana</li>
+  </ul>
+
+  <h2>Agenda Admin (Semanal)</h2>
+  <ul>
+    <li>Visão Seg–Dom com navegação por semana</li>
+    <li>Filtro por funcionário</li>
+    <li>Cancelamento com confirmação inline</li>
+    <li>Hoje em azul, dias passados em cinza</li>
+  </ul>
+
+  <h2>Portal do Cliente</h2>
+  <ul>
+    <li>Login com validação de permissão <code>client</code></li>
+    <li>Cadastro cria usuário + tenant + permissão em transação</li>
+    <li>Agendar: seleciona data → funcionários disponíveis → horário → confirma</li>
+    <li>Meus Agendamentos: próximos e histórico, com cancelamento</li>
+  </ul>
+
+  <h2>Relatório de Agendamentos</h2>
+  <ul>
+    <li>Filtros reativos: período, funcionário, serviço</li>
+    <li>Cards: total, realizados, cancelados, taxa de cancelamento</li>
+    <li>Impressão via <code>window.print()</code> com CSS que oculta UI</li>
+  </ul>
+
+  <!-- 8. CONVENÇÕES -->
+  <h1>8. Convenções e Padrões</h1>
+
+  <h2>Badges de cor — Portal vs Admin</h2>
+  <div class="highlight warning">
+    O portal usa Bootstrap 5 via CDN <strong>sem</strong> as classes customizadas do Materio.
+    Classes <code>bg-label-*</code> não funcionam no portal — sempre usar <code>rgba()</code> inline.
+  </div>
+  <pre>/* Portal — usar rgba inline */
+&lt;span style="background:rgba(255,171,0,.15);color:#a07800;"&gt;Texto&lt;/span&gt;
+
+/* Admin (Materio) — pode usar bg-label-* */
+&lt;span class="badge bg-label-warning"&gt;Texto&lt;/span&gt;</pre>
+
+  <h2>Confirmações destrutivas — nunca usar confirm()</h2>
+  <pre>// Padrão Sim/Não inline via Livewire
+public ?int $confirmingDeleteId = null;
+
+public function confirmDelete(int $id): void {
+    $this->confirmingDeleteId = $id;
+}
+public function delete(int $id): void {
+    Model::findOrFail($id)->delete();
+    $this->confirmingDeleteId = null;
+}</pre>
+
+  <!-- 9. CREDENCIAIS -->
+  <h1>9. Credenciais de Desenvolvimento</h1>
+  <table>
+    <tr><th>Perfil</th><th>URL</th><th>E-mail</th><th>Senha</th></tr>
+    <tr><td><span class="badge badge-admin">Admin</span></td><td>http://localhost</td><td>admin@sistema.test</td><td>password</td></tr>
+    <tr><td><span class="badge badge-client">Cliente</span></td><td>http://localhost/portal/login</td><td>cliente@teste.com</td><td>password</td></tr>
+  </table>
+
+  <!-- 10. PRÓXIMOS PASSOS -->
+  <h1>10. Próximas Implementações Sugeridas</h1>
+
+  <h2>Alta Prioridade</h2>
+  <ul class="checklist">
+    <li>Preço nos serviços — coluna <code>price</code> em <code>services</code> e exibição no relatório</li>
+    <li>Dashboard com métricas reais — agendamentos hoje, esta semana, taxa de cancelamento</li>
+    <li>Notificação por e-mail — confirmação e cancelamento de agendamento</li>
+    <li>Permissão <code>employee</code> — funcionário vê sua própria agenda filtrada</li>
+  </ul>
+
+  <h2>Média Prioridade</h2>
+  <ul class="checklist">
+    <li>Paginação na lista de usuários e no relatório</li>
+    <li>Perfil do cliente — editar nome, e-mail e senha no portal</li>
+    <li>Reagendamento — remarcar sem cancelar</li>
+    <li>Duração dos serviços — evitar conflito de horários</li>
+  </ul>
+
+  <h2>Baixa Prioridade</h2>
+  <ul class="checklist">
+    <li>Multi-tenant completo — seleção de tenant no login admin</li>
+    <li>Exportar relatório para Excel (maatwebsite/excel)</li>
+    <li>PWA no portal — app no celular para clientes</li>
+  </ul>
+
+  <!-- 11. COMANDOS ÚTEIS -->
+  <h1>11. Comandos Úteis</h1>
+
+  <h2>Criar usuário cliente via Tinker</h2>
+  <pre>php artisan tinker --execute="
+\$user = App\Models\User::create([
+    'name' => 'Nome Cliente',
+    'email' => 'email@exemplo.com',
+    'password' => bcrypt('password'),
+]);
+\$permId = DB::table('permissions')->where('name','client')->value('id');
+DB::table('user_permissions')->insert([
+    'tenant_id' => 1,
+    'user_id' => \$user->id,
+    'code_permission' => \$permId,
+    'created_at' => now(),
+    'updated_at' => now(),
+]);
+echo 'Criado! ID: ' . \$user->id;
+"</pre>
+
+  <h2>Manutenção</h2>
+  <pre>php artisan route:clear     # limpar cache de rotas
+php artisan config:clear    # limpar cache de config
+php artisan view:clear      # limpar cache de views
+php artisan migrate         # rodar novas migrations
+git push origin main        # push via SSH (já configurado)</pre>
+
+  <hr>
+  <p style="text-align:center;color:#aaa;font-size:.8rem;margin-top:24px;">
+    Sistema de Agendamento SaaS — Documentação Técnica — Junho/2026
+  </p>
+
+</div>
+</body>
+</html>
