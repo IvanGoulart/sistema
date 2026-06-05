@@ -21,6 +21,9 @@ class RedirectIfAuthenticated
 
         foreach ($guards as $guard) {
             if (Auth::guard($guard)->check()) {
+                if ($request->is('portal/*') || $request->is('portal')) {
+                    return redirect()->route('portal.home');
+                }
                 return redirect(RouteServiceProvider::HOME);
             }
         }

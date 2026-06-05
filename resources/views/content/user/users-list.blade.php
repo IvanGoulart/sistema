@@ -1,199 +1,195 @@
 @extends('layouts/contentNavbarLayout')
 
-@section('title', 'Dashboard - Analytics')
-
-@section('vendor-style')
-<link rel="stylesheet" href="{{asset('assets/vendor/libs/apex-charts/apex-charts.css')}}">
-@endsection
-
-@section('vendor-script')
-<script src="{{asset('assets/vendor/libs/apex-charts/apexcharts.js')}}"></script>
-@endsection
-
-@section('page-script')
-<script src="{{asset('assets/js/dashboards-analytics.js')}}"></script>
-@endsection
+@section('title', 'Lista de Usuários')
 
 @php
-$active = [
-0 => ['status' => 'Inativo', 'cor' => 'danger'],
-1 => ['status' => 'Ativo', 'cor' => 'success'],
-2 => ['status' => 'Pendente', 'cor' => 'warning']
+$statusMap = [
+    0 => ['label' => 'Inativo',  'label_class' => 'bg-label-danger'],
+    1 => ['label' => 'Ativo',    'label_class' => 'bg-label-success'],
+    2 => ['label' => 'Pendente', 'label_class' => 'bg-label-warning'],
 ];
+
+$permLabel = [
+    'admin'    => ['text' => 'Admin',       'class' => 'bg-label-danger'],
+    'employee' => ['text' => 'Funcionário', 'class' => 'bg-label-warning'],
+    'client'   => ['text' => 'Cliente',     'class' => 'bg-label-info'],
+];
+
+$totalAdmin    = collect($users)->filter(fn($u) => $u->permissions->first()?->name === 'admin')->count();
+$totalEmployee = collect($users)->filter(fn($u) => $u->permissions->first()?->name === 'employee')->count();
+$totalClient   = collect($users)->filter(fn($u) => $u->permissions->first()?->name === 'client')->count();
 @endphp
+
 @section('content')
-<div class="row gy-4">
 
-	<!-- Congratulations card -->
-	<div class="col-md-12 col-lg-4">
-		<div class="card">
-			<div class="card-body">
-				<h4 class="card-title mb-1">Total de Clientes 🎉</h4>
-				<h4 class="text-primary mb-1">{{ count($users) }}</h4>
-			</div>
-			<img src="{{asset('assets/img/icons/misc/triangle-light.png')}}"
-				class="scaleX-n1-rtl position-absolute bottom-0 end-0" width="166" alt="triangle background">
-			<img src="{{asset('assets/img/illustrations/trophy.png')}}"
-				class="scaleX-n1-rtl position-absolute bottom-0 end-0 me-4 mb-4 pb-2" width="40" alt="view sales">
-		</div>
-	</div>
-	<!--/ Congratulations card -->
-
-	<!-- Transactions -->
-
-	<!--
-  <div class="col-lg-8">
-    <div class="card">
-      <div class="card-header">
-        <div class="d-flex align-items-center justify-content-between">
-          <h5 class="card-title m-0 me-2">Transactions</h5>
-          <div class="dropdown">
-            <button class="btn p-0" type="button" id="transactionID" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-              <i class="mdi mdi-dots-vertical mdi-24px"></i>
-            </button>
-            <div class="dropdown-menu dropdown-menu-end" aria-labelledby="transactionID">
-              <a class="dropdown-item" href="javascript:void(0);">Refresh</a>
-              <a class="dropdown-item" href="javascript:void(0);">Share</a>
-              <a class="dropdown-item" href="javascript:void(0);">Update</a>
-            </div>
-          </div>
-        </div>
-        <p class="mt-3"><span class="fw-medium">Total 48.5% growth</span> 😎 this month</p>
-      </div>
-      <div class="card-body">
-        <div class="row g-3">
-          <div class="col-md-3 col-6">
-            <div class="d-flex align-items-center">
-              <div class="avatar">
-                <div class="avatar-initial bg-primary rounded shadow">
-                  <i class="mdi mdi-trending-up mdi-24px"></i>
-                </div>
-              </div>
-              <div class="ms-3">
-                <div class="small mb-1">Sales</div>
-                <h5 class="mb-0">245k</h5>
-              </div>
-            </div>
-          </div>
-          <div class="col-md-3 col-6">
-            <div class="d-flex align-items-center">
-              <div class="avatar">
-                <div class="avatar-initial bg-success rounded shadow">
-                  <i class="mdi mdi-account-outline mdi-24px"></i>
-                </div>
-              </div>
-              <div class="ms-3">
-                <div class="small mb-1">Customers</div>
-                <h5 class="mb-0">12.5k</h5>
-              </div>
-            </div>
-          </div>
-          <div class="col-md-3 col-6">
-            <div class="d-flex align-items-center">
-              <div class="avatar">
-                <div class="avatar-initial bg-warning rounded shadow">
-                  <i class="mdi mdi-cellphone-link mdi-24px"></i>
-                </div>
-              </div>
-              <div class="ms-3">
-                <div class="small mb-1">Product</div>
-                <h5 class="mb-0">1.54k</h5>
-              </div>
-            </div>
-          </div>
-          <div class="col-md-3 col-6">
-            <div class="d-flex align-items-center">
-              <div class="avatar">
-                <div class="avatar-initial bg-info rounded shadow">
-                  <i class="mdi mdi-currency-usd mdi-24px"></i>
-                </div>
-              </div>
-              <div class="ms-3">
-                <div class="small mb-1">Revenue</div>
-                <h5 class="mb-0">$88k</h5>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+{{-- Cabeçalho --}}
+<div class="d-flex align-items-center justify-content-between mb-4">
+    <div>
+        <h4 class="mb-1">Usuários</h4>
+        <p class="text-muted mb-0">Gerencie os usuários do sistema</p>
     </div>
-  </div>
-  -->
-	<!--/ Transactions -->
-
-	<!-- Data Tables -->
-	<div class="col-12">
-		<div class="card">
-			@if ($errors->any())
-			<div class="alert alert-danger">
-				<ul>
-					@foreach ($errors->all() as $error)
-					<li>{{ $error }}</li>
-					@endforeach
-				</ul>
-			</div>
-			@endif
-			@if(session('success'))
-			<div class="alert alert-success">
-				{{ session('success') }}
-			</div>
-			@endif
-
-			<div class="table-responsive">
-				<table class="table">
-					<thead class="table-light">
-						<tr>
-							<th class="text-truncate">Usuario</th>
-							<th class="text-truncate">Email</th>
-							<th class="text-truncate">Permissão</th>
-							<th class="text-truncate">Status</th>
-							<th class="text-truncate">Ação</th>
-						</tr>
-					</thead>
-					<tbody>
-
-          @if (isset($users) && count($users) > 0)
-            @foreach ($users as $user)
-              <tr>
-                <td>
-                  <div class="d-flex align-items-center">
-                    <div class="avatar avatar-sm me-3">
-                      <img src="{{asset('assets/img/avatars/1.png')}}" alt="Avatar" class="rounded-circle">
-                    </div>
-                    <div>
-                      <h6 class="mb-0 text-truncate">{{ $user->name }}</h6>
-                      <small class="text-truncate">@amiccoo</small>
-                    </div>
-                  </div>
-                </td>
-                <td class="text-truncate">{{ $user->email }}</td>
-                <td class="text-truncate"><i class="mdi mdi-laptop mdi-24px text-danger me-1"></i>
-                  {{ $user->userPermission?->permission?->name ?? 'Permission name does not exist.' }}
-                </td>
-                <td><span class="badge bg-label-{{$active[$user->active]['cor']}} rounded-pill">{{$active[$user->active]['status']}}</span>
-                </td>
-                <td>
-                  <div class="dropdown">
-                    <button type="button" class="btn p-0 dropdown-toggle hide-arrow" data-bs-toggle="dropdown" aria-expanded="false"><i class="mdi mdi-dots-vertical"></i></button>
-                    <div class="dropdown-menu" style="">
-                      <a class="dropdown-item waves-effect" href="{{ route('user-edit', ['id' => $user->id]) }}"><i class="mdi mdi-pencil-outline me-1"></i> Editar</a>
-                      <a class="dropdown-item waves-effect" href="{{ route('user-delete', ['id' => $user->id]) }}"><i class="mdi mdi-account-alert-outline"></i> Inativar</a>
-                      <a class="dropdown-item waves-effect" href="{{ route('user-active', ['id' => $user->id]) }}"><i class="mdi mdi-account-outline"></i> Ativar</a>
-                    </div>
-                  </div>
-                </td>
-              </tr>
-            @endforeach
-          @else
-            <tr>
-              <td colspan="5" class="text-center">Nenhum usuário encontrado.</td>
-            </tr>
-          @endif
-					</tbody>
-				</table>
-			</div>
-		</div>
-	</div>
-	<!--/ Data Tables -->
+    <a href="{{ route('auth-register-basic') }}" class="btn btn-primary">
+        <i class="mdi mdi-account-plus-outline me-1"></i> Novo Usuário
+    </a>
 </div>
+
+{{-- Alertas --}}
+@if($errors->any())
+    <div class="alert alert-danger alert-dismissible fade show mb-4" role="alert">
+        <ul class="mb-0">
+            @foreach($errors->all() as $error)
+                <li>{{ $error }}</li>
+            @endforeach
+        </ul>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+@endif
+@if(session('success'))
+    <div class="alert alert-success alert-dismissible fade show mb-4" role="alert">
+        <i class="mdi mdi-check-circle-outline me-1"></i> {{ session('success') }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+@endif
+
+{{-- Cards de resumo --}}
+<div class="row g-3 mb-4">
+    <div class="col-6 col-md-3">
+        <div class="card h-100">
+            <div class="card-body d-flex align-items-center gap-3">
+                <div class="d-flex align-items-center justify-content-center rounded-circle text-white"
+                     style="width:46px;height:46px;background:#696cff;flex-shrink:0;">
+                    <i class="mdi mdi-account-group-outline mdi-24px"></i>
+                </div>
+                <div>
+                    <div class="text-muted small">Total</div>
+                    <h4 class="mb-0 fw-bold">{{ count($users) }}</h4>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card h-100">
+            <div class="card-body d-flex align-items-center gap-3">
+                <div class="d-flex align-items-center justify-content-center rounded-circle"
+                     style="width:46px;height:46px;flex-shrink:0;background:rgba(255,62,29,.15);color:#ff3e1d;">
+                    <i class="mdi mdi-shield-account-outline mdi-24px"></i>
+                </div>
+                <div>
+                    <div class="text-muted small">Admins</div>
+                    <h4 class="mb-0 fw-bold">{{ $totalAdmin }}</h4>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card h-100">
+            <div class="card-body d-flex align-items-center gap-3">
+                <div class="d-flex align-items-center justify-content-center rounded-circle"
+                     style="width:46px;height:46px;flex-shrink:0;background:rgba(255,171,0,.15);color:#ffab00;">
+                    <i class="mdi mdi-account-tie-outline mdi-24px"></i>
+                </div>
+                <div>
+                    <div class="text-muted small">Funcionários</div>
+                    <h4 class="mb-0 fw-bold">{{ $totalEmployee }}</h4>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card h-100">
+            <div class="card-body d-flex align-items-center gap-3">
+                <div class="d-flex align-items-center justify-content-center rounded-circle"
+                     style="width:46px;height:46px;flex-shrink:0;background:rgba(3,195,236,.15);color:#03c3ec;">
+                    <i class="mdi mdi-account-outline mdi-24px"></i>
+                </div>
+                <div>
+                    <div class="text-muted small">Clientes</div>
+                    <h4 class="mb-0 fw-bold">{{ $totalClient }}</h4>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{{-- Tabela --}}
+<div class="card">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th class="ps-4">Usuário</th>
+                        <th>E-mail</th>
+                        <th>Permissão</th>
+                        <th>Status</th>
+                        <th class="text-end pe-4">Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @forelse($users as $user)
+                        @php
+                            $perm    = $user->permissions->first()?->name ?? null;
+                            $pl      = $permLabel[$perm] ?? null;
+                            $initial = strtoupper(substr($user->name, 0, 1));
+                            $status  = $statusMap[$user->active] ?? $statusMap[0];
+                        @endphp
+                        <tr>
+                            <td class="ps-4">
+                                <div class="d-flex align-items-center gap-2">
+                                    <div class="d-flex align-items-center justify-content-center text-white fw-bold"
+                                         style="width:36px;height:36px;border-radius:50%;background:#696cff;font-size:.85rem;flex-shrink:0;">
+                                        {{ $initial }}
+                                    </div>
+                                    <div>
+                                        <div class="fw-semibold">{{ $user->name }}</div>
+                                        <small class="text-muted">ID #{{ $user->id }}</small>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="text-muted">{{ $user->email }}</td>
+                            <td>
+                                @if($pl)
+                                    <span class="badge {{ $pl['class'] }} rounded-pill">{{ $pl['text'] }}</span>
+                                @else
+                                    <span class="text-muted small">—</span>
+                                @endif
+                            </td>
+                            <td>
+                                <span class="badge {{ $status['label_class'] }} rounded-pill">
+                                    {{ $status['label'] }}
+                                </span>
+                            </td>
+                            <td class="text-end pe-4">
+                                <a href="{{ route('user-edit', $user->id) }}"
+                                   class="btn btn-sm btn-outline-primary me-1" title="Editar">
+                                    <i class="mdi mdi-pencil-outline"></i>
+                                </a>
+                                @if($user->active == 1)
+                                    <a href="{{ route('user-delete', $user->id) }}"
+                                       class="btn btn-sm btn-outline-danger" title="Inativar"
+                                       onclick="return confirm('Deseja inativar este usuário?')">
+                                        <i class="mdi mdi-account-off-outline"></i>
+                                    </a>
+                                @else
+                                    <a href="{{ route('user-active', $user->id) }}"
+                                       class="btn btn-sm btn-outline-success" title="Ativar">
+                                        <i class="mdi mdi-account-check-outline"></i>
+                                    </a>
+                                @endif
+                            </td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="5" class="text-center py-5">
+                                <i class="mdi mdi-account-search-outline text-muted" style="font-size:2.5rem;opacity:.4"></i>
+                                <p class="text-muted mt-2 mb-0">Nenhum usuário encontrado.</p>
+                            </td>
+                        </tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
 @endsection

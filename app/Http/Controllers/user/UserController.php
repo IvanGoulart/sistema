@@ -81,7 +81,7 @@ class UserController extends Controller
 
     $permissions = $this->permissionRepository->getAllPermissions();
 
-    $selectedPermissionId = $user->userPermission->code_permission; // Supondo que o usuário tenha uma permissão atribuída
+    $selectedPermissionId = $user->permissions->first()?->id;
 
     return view('content.authentications.auth-register-basic', [
       'user' => $user,

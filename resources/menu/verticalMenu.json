@@ -41,6 +41,12 @@
           "name": "Disponibilidade",
           "slug": "schedule-availability",
           "permission": "admin"
+        },
+        {
+          "url": "/reports",
+          "name": "Relatórios",
+          "slug": "reports",
+          "permission": "admin"
         }
       ]
     }
