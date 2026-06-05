@@ -47,6 +47,7 @@ use App\Http\Controllers\schedule\ScheduleController;
 use App\Http\Controllers\Portal\AuthController;
 use App\Http\Controllers\Portal\PortalController;
 use App\Http\Controllers\Tenant\TenantController;
+use App\Http\Controllers\services\ServicesController;
 
 // Main Page Route
 Route::get('/dashboard', [Analytics::class, 'index'])->name('dashboard-analytics');
@@ -60,14 +61,17 @@ Route::get('/layouts/blank', [Blank::class, 'index'])->name('layouts-blank');
 
 // Users
 Route::middleware(['auth','permission:admin'])->group(function () {
-  Route::get('/users/list', [UserController::class, 'index'])->name('users-list');
-  Route::get('/user/delete/{id}', [UserController::class, 'destroy'])->name('user-delete');
-  Route::get('/user/active/{id}', [UserController::class, 'active'])->name('user-active');
-  Route::get('/user/edit/{id}', [UserController::class, 'edit'])->name('user-edit');
-  Route::put('/user/update/{id}', [UserController::class, 'update'])->name('user-update');
-//schedule
-  Route::get('/schedule/create', [ScheduleController::class, 'create'])->name('schedule-create');
+    Route::get('/users/list', [UserController::class, 'index'])->name('users-list');
+    Route::get('/user/delete/{id}', [UserController::class, 'destroy'])->name('user-delete');
+    Route::get('/user/active/{id}', [UserController::class, 'active'])->name('user-active');
+    Route::get('/user/edit/{id}', [UserController::class, 'edit'])->name('user-edit');
+    Route::put('/user/update/{id}', [UserController::class, 'update'])->name('user-update');
 
+    Route::get('/schedule/create', [ScheduleController::class, 'create'])->name('schedule-create');
+
+    Route::get('/services', [ServicesController::class, 'index'])->name('services.index');
+    Route::get('/schedule/availability', [ScheduleController::class, 'availability'])->name('schedule.availability');
+    Route::get('/schedule/admin', [ScheduleController::class, 'adminAgenda'])->name('schedule.admin');
 });
 
 Route::middleware(['auth', 'permission:admin'])->prefix('tenant')->group(function () {

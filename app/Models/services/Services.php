@@ -8,15 +8,19 @@ use App\Models\User;
 
 class Services extends Model
 {
-  use HasFactory;
+    use HasFactory;
 
-  public function users()
-  {
-    return $this->belongsToMany(
-      User::class,
-      'user_services',
-      'service_id', // coluna da pivot que referencia services
-      'user_id'     // coluna da pivot que referencia users
-    );
-  }
+    protected $table = 'services';
+
+    protected $fillable = ['tenant_id', 'name', 'description'];
+
+    public function users()
+    {
+        return $this->belongsToMany(
+            User::class,
+            'user_services',
+            'service_id',
+            'user_id'
+        );
+    }
 }

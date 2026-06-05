@@ -3,9 +3,6 @@
 namespace App\Http\Controllers\schedule;
 
 use App\Http\Controllers\Controller;
-use Carbon\Carbon;
-use App\Models\schedule\AvailableEmployeeSchedule;
-use App\Models\Schedule;
 
 class ScheduleController extends Controller
 {
@@ -22,6 +19,16 @@ class ScheduleController extends Controller
   public function create()
   {
     return view('content.schedule.schedule-create');
+  }
+
+  public function adminAgenda()
+  {
+    return view('content.schedule.admin-agenda');
+  }
+
+  public function availability()
+  {
+    return view('content.schedule.employee-availability');
   }
 
   public function clientCreate()

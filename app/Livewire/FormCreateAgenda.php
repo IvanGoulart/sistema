@@ -6,196 +6,222 @@ use Livewire\Component;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use App\Models\services\Services;
-use App\Models\schedule\AvailableEmployeeSchedule;
+use App\Models\schedule\EmployeeWeeklySchedule;
 use App\Interfaces\Schedule\ScheduleRepositoryInterface;
 
 class FormCreateAgenda extends Component
 {
-  public $selectedService;
-  public $services = [];
-  public $employees = [];
-  public $selectedEmployee;
-  public $selectedHour;
-  public $selectedDay;
-  public $scheduleEmployeeAvailable = [];
-  public $mySchedules = [];
+    public $selectedService = null;
+    public $services;
+    public $employees = [];
+    public $selectedEmployee = null;
+    public $selectedHour = null;
+    public $selectedDay = null;
+    public $scheduleEmployeeAvailable = [];
+    public array $upcomingSchedules = [];
+    public array $pastSchedules = [];
+    public string $minDate;
+    public ?int $confirmingCancelId = null;
 
-  public function mount()
-  {
-    $this->services = Services::all();
-    $this->loadMySchedules();
-  }
-  public function updateUsers()
-  {
-    $this->selectedEmployee = null;
-    $this->scheduleEmployeeAvailable = [];
-    $this->selectedHour = null;
-    $this->selectedDay = null;
-    $this->employees = [];
-
-    if ($this->selectedService) {
-      $service = Services::with('users')->find($this->selectedService);
-      $this->employees = $service ? $service->users : [];
-    }
-  }
-
-  public function listEmployeeAvailable()
-  {
-    $this->scheduleEmployeeAvailable = [];
-    $this->selectedHour = null;
-
-    if (!$this->selectedEmployee || !$this->selectedDay) {
-      return;
+    public function mount(): void
+    {
+        $this->minDate = now()->format('Y-m-d');
+        $this->services = Services::all();
+        $this->loadMySchedules();
     }
 
-    // 1) janelas disponíveis do dia
-    $windows = AvailableEmployeeSchedule::where('employee_id', $this->selectedEmployee)
-      ->where('date', $this->selectedDay)
-      ->get(['start_time', 'end_time']);
+    public function updatedSelectedService(): void
+    {
+        $this->selectedEmployee = null;
+        $this->selectedDay = null;
+        $this->selectedHour = null;
+        $this->employees = [];
+        $this->scheduleEmployeeAvailable = [];
 
-    if ($windows->isEmpty()) {
-      return;
-    }
-
-    // 2) horários já agendados (não cancelados)
-    $booked = DB::table('schedules')
-      ->where('employee_id', $this->selectedEmployee)
-      ->where('day', $this->selectedDay)
-      ->where('cancel', false)
-      ->pluck('hour')
-      ->map(fn($t) => Carbon::parse($t)->format('H:i'))
-      ->toArray();
-
-    // 3) gerar slots (ex.: 30 min)
-    $slotMinutes = 30;
-    $free = [];
-
-    foreach ($windows as $w) {
-      $start = Carbon::parse($w->start_time);
-      $end   = Carbon::parse($w->end_time);
-
-      for ($t = $start->copy(); $t->lt($end); $t->addMinutes($slotMinutes)) {
-        $hhmm = $t->format('H:i');
-        if (!in_array($hhmm, $booked, true)) {
-          $free[] = $hhmm;
+        if ($this->selectedService) {
+            $service = Services::with('users')->find($this->selectedService);
+            $this->employees = $service ? $service->users->all() : [];
         }
-      }
     }
 
-    $free = array_values(array_unique($free));
-    sort($free);
-
-    $this->scheduleEmployeeAvailable = $free;
-  }
-
-  public function selectHour(string $hour)
-  {
-    $this->selectedHour = $hour;
-  }
-
-  public function createSchedule(ScheduleRepositoryInterface $scheduleRepository)
-  {
-    $this->validate([
-      'selectedService' => 'required|exists:services,id',
-      'selectedEmployee' => 'required|exists:users,id',
-      'selectedDay' => 'required|date',
-      'selectedHour' => 'required',
-    ]);
-
-    // garante no backend que ainda está livre
-    $exists = DB::table('schedules')
-      ->where('employee_id', $this->selectedEmployee)
-      ->where('day', $this->selectedDay)
-      ->where('hour', $this->selectedHour)
-      ->where('cancel', false)
-      ->exists();
-
-    if ($exists) {
-      $this->addError('selectedHour', 'Esse horário acabou de ser ocupado. Escolha outro.');
-      $this->listEmployeeAvailable();
-      return;
+    public function updatedSelectedEmployee(): void
+    {
+        $this->selectedHour = null;
+        $this->listEmployeeAvailable();
     }
 
-    $scheduleData = [
-      'service_id' => $this->selectedService,
-      'employee_id' => $this->selectedEmployee,
-      'client_id' => auth()->id(),
-      'day' => $this->selectedDay,
-      'hour' => $this->selectedHour,
-      'cancel' => false,
-    ];
-
-    $scheduleRepository->createSchedule($scheduleData);
-
-    session()->flash('message', 'Agenda salva com sucesso!');
-
-    $this->loadMySchedules();
-    $this->selectedHour = null;
-
-    // se quiser resetar tudo:
-    // $this->reset(['selectedService', 'selectedEmployee', 'selectedDay', 'selectedHour', 'scheduleEmployeeAvailable']);
-  }
-
-  public function loadMySchedules()
-  {
-    // Se não estiver logado, evita erro
-    if (!auth()->check()) {
-      $this->mySchedules = [];
-      return;
+    public function updatedSelectedDay(): void
+    {
+        if ($this->selectedDay && $this->selectedDay < $this->minDate) {
+            $this->selectedDay = $this->minDate;
+        }
+        $this->selectedHour = null;
+        $this->listEmployeeAvailable();
     }
 
-    $this->mySchedules = DB::table('schedules')
-      ->join('services', 'services.id', '=', 'schedules.service_id')
-      ->join('users as employees', 'employees.id', '=', 'schedules.employee_id')
-      ->where('schedules.client_id', auth()->id())
-      ->where('schedules.cancel', false)
-      ->orderBy('schedules.day')
-      ->orderBy('schedules.hour')
-      ->select([
-        'schedules.id',
-        'schedules.day',
-        'schedules.hour',
-        'services.name as service_name',
-        'employees.name as employee_name',
-      ])
-      ->get()
-      ->toArray();
-  }
-  public function cancelSchedule($scheduleId)
-  {
-    DB::table('schedules')
-      ->where('id', $scheduleId)
-      ->where('client_id', auth()->id()) // garante que é do cliente logado
-      ->update([
-        'cancel' => true,
-        'updated_at' => now()
-      ]);
+    public function listEmployeeAvailable(): void
+    {
+        $this->scheduleEmployeeAvailable = [];
+        $this->selectedHour = null;
 
-    session()->flash('message', 'Agendamento cancelado com sucesso.');
+        if (!$this->selectedEmployee || !$this->selectedDay) {
+            return;
+        }
 
-    $this->loadMySchedules();      // atualiza tabela de agendamentos
-    $this->listEmployeeAvailable(); // faz horário voltar a aparecer
-  }
-  public function updatedSelectedService()
-  {
-    $this->updateUsers();          // recalcula employees
-    $this->listEmployeeAvailable(); // recalcula horários (vai limpar se faltar dados)
-  }
+        $dayOfWeek = Carbon::parse($this->selectedDay)->dayOfWeek;
 
-  public function updatedSelectedEmployee()
-  {
-    $this->listEmployeeAvailable();
-  }
+        $windows = EmployeeWeeklySchedule::where('tenant_id', session('tenant_id') ?? 1)
+            ->where('employee_id', $this->selectedEmployee)
+            ->where('day_of_week', $dayOfWeek)
+            ->get(['start_time', 'end_time']);
 
-  public function updatedSelectedDay()
-  {
-    $this->listEmployeeAvailable();
-  }
+        if ($windows->isEmpty()) {
+            return;
+        }
 
-  public function render()
-  {
-    return view('livewire.form-create-agenda');
-  }
+        $booked = DB::table('schedules')
+            ->where('employee_id', $this->selectedEmployee)
+            ->where('day', $this->selectedDay)
+            ->where('cancel', false)
+            ->pluck('hour')
+            ->map(fn($t) => Carbon::parse($t)->format('H:i'))
+            ->toArray();
 
+        $free = [];
+        foreach ($windows as $w) {
+            $start = Carbon::parse($w->start_time);
+            $end   = Carbon::parse($w->end_time);
+            for ($t = $start->copy(); $t->lt($end); $t->addMinutes(30)) {
+                $hhmm = $t->format('H:i');
+                if (!in_array($hhmm, $booked, true)) {
+                    $free[] = $hhmm;
+                }
+            }
+        }
 
+        $free = array_values(array_unique($free));
+        sort($free);
+        $this->scheduleEmployeeAvailable = $free;
+    }
+
+    public function selectHour(string $hour): void
+    {
+        $this->selectedHour = $hour;
+    }
+
+    public function createSchedule(ScheduleRepositoryInterface $scheduleRepository): void
+    {
+        $this->validate([
+            'selectedService'  => 'required|exists:services,id',
+            'selectedEmployee' => 'required|exists:users,id',
+            'selectedDay'      => 'required|date|after_or_equal:today',
+            'selectedHour'     => 'required',
+        ], [
+            'selectedService.required'   => 'Selecione um serviço.',
+            'selectedEmployee.required'  => 'Selecione um profissional.',
+            'selectedDay.required'       => 'Selecione uma data.',
+            'selectedDay.after_or_equal' => 'Não é possível agendar para datas passadas.',
+            'selectedHour.required'      => 'Selecione um horário.',
+        ]);
+
+        $exists = DB::table('schedules')
+            ->where('employee_id', $this->selectedEmployee)
+            ->where('day', $this->selectedDay)
+            ->where('hour', $this->selectedHour)
+            ->where('cancel', false)
+            ->exists();
+
+        if ($exists) {
+            $this->addError('selectedHour', 'Esse horário acabou de ser ocupado. Escolha outro.');
+            $this->listEmployeeAvailable();
+            return;
+        }
+
+        $scheduleRepository->createSchedule([
+            'service_id'  => $this->selectedService,
+            'employee_id' => $this->selectedEmployee,
+            'client_id'   => auth()->id(),
+            'day'         => $this->selectedDay,
+            'hour'        => $this->selectedHour,
+            'cancel'      => false,
+        ]);
+
+        session()->flash('message', 'Agendamento realizado com sucesso!');
+
+        $this->selectedService = null;
+        $this->selectedEmployee = null;
+        $this->selectedDay = null;
+        $this->selectedHour = null;
+        $this->employees = [];
+        $this->scheduleEmployeeAvailable = [];
+
+        $this->loadMySchedules();
+    }
+
+    public function loadMySchedules(): void
+    {
+        if (!auth()->check()) {
+            $this->upcomingSchedules = [];
+            $this->pastSchedules = [];
+            return;
+        }
+
+        $today = now()->format('Y-m-d');
+
+        $base = DB::table('schedules')
+            ->join('services', 'services.id', '=', 'schedules.service_id')
+            ->join('users as employees', 'employees.id', '=', 'schedules.employee_id')
+            ->where('schedules.client_id', auth()->id())
+            ->where('schedules.cancel', false)
+            ->select(
+                'schedules.id',
+                'schedules.day',
+                'schedules.hour',
+                'services.name as service_name',
+                'employees.name as employee_name'
+            );
+
+        $this->upcomingSchedules = (clone $base)
+            ->where('schedules.day', '>=', $today)
+            ->orderBy('schedules.day')
+            ->orderBy('schedules.hour')
+            ->get()
+            ->toArray();
+
+        $this->pastSchedules = (clone $base)
+            ->where('schedules.day', '<', $today)
+            ->orderByDesc('schedules.day')
+            ->orderByDesc('schedules.hour')
+            ->limit(5)
+            ->get()
+            ->toArray();
+    }
+
+    public function confirmCancel(int $id): void
+    {
+        $this->confirmingCancelId = $id;
+    }
+
+    public function dismissCancel(): void
+    {
+        $this->confirmingCancelId = null;
+    }
+
+    public function cancelSchedule(int $scheduleId): void
+    {
+        DB::table('schedules')
+            ->where('id', $scheduleId)
+            ->where('client_id', auth()->id())
+            ->update(['cancel' => true, 'updated_at' => now()]);
+
+        session()->flash('message', 'Agendamento cancelado com sucesso.');
+        $this->confirmingCancelId = null;
+        $this->loadMySchedules();
+        $this->listEmployeeAvailable();
+    }
+
+    public function render()
+    {
+        return view('livewire.form-create-agenda');
+    }
 }

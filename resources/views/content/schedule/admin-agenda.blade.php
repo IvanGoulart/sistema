@@ -3,5 +3,5 @@
 @section('title', 'Agenda')
 
 @section('content')
-<livewire:form-create-agenda />
+<livewire:schedule.admin-agenda />
 @endsection

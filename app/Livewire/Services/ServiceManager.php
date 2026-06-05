@@ -1,0 +1,203 @@
+<?php
+
+namespace App\Livewire\Services;
+
+use Livewire\Component;
+use Illuminate\Support\Facades\DB;
+use App\Models\services\Services;
+
+class ServiceManager extends Component
+{
+    public $services;
+
+    public bool $showForm = false;
+    public ?int $editingId = null;
+    public string $name = '';
+    public string $description = '';
+
+    public ?int $confirmingDeleteId = null;
+
+    public ?int $managingServiceId = null;
+    public $availableEmployees = [];
+    public array $linkedEmployeeIds = [];
+
+    public function mount(): void
+    {
+        $this->loadServices();
+    }
+
+    private function tenantId(): int
+    {
+        return session('tenant_id') ?? 1;
+    }
+
+    public function loadServices(): void
+    {
+        $tenantId = $this->tenantId();
+
+        $this->services = Services::where('tenant_id', $tenantId)
+            ->orderBy('name')
+            ->get()
+            ->map(function ($service) use ($tenantId) {
+                $service->employee_count = DB::table('user_services')
+                    ->where('tenant_id', $tenantId)
+                    ->where('service_id', $service->id)
+                    ->count();
+                return $service;
+            });
+    }
+
+    public function openCreate(): void
+    {
+        $this->editingId = null;
+        $this->name = '';
+        $this->description = '';
+        $this->managingServiceId = null;
+        $this->showForm = true;
+        $this->resetValidation();
+    }
+
+    public function openEdit(int $id): void
+    {
+        $service = Services::findOrFail($id);
+        $this->editingId = $id;
+        $this->name = $service->name;
+        $this->description = $service->description ?? '';
+        $this->managingServiceId = null;
+        $this->showForm = true;
+        $this->resetValidation();
+    }
+
+    public function save(): void
+    {
+        $this->validate([
+            'name'        => 'required|string|max:100',
+            'description' => 'nullable|string|max:500',
+        ], [
+            'name.required' => 'O nome do serviço é obrigatório.',
+            'name.max'      => 'O nome deve ter no máximo 100 caracteres.',
+        ]);
+
+        if ($this->editingId) {
+            Services::where('id', $this->editingId)
+                ->where('tenant_id', $this->tenantId())
+                ->update([
+                    'name'        => trim($this->name),
+                    'description' => trim($this->description) ?: null,
+                ]);
+            session()->flash('message', 'Serviço atualizado com sucesso!');
+        } else {
+            Services::create([
+                'tenant_id'   => $this->tenantId(),
+                'name'        => trim($this->name),
+                'description' => trim($this->description) ?: null,
+            ]);
+            session()->flash('message', 'Serviço criado com sucesso!');
+        }
+
+        $this->cancelForm();
+        $this->loadServices();
+    }
+
+    public function cancelForm(): void
+    {
+        $this->showForm = false;
+        $this->editingId = null;
+        $this->name = '';
+        $this->description = '';
+        $this->resetValidation();
+    }
+
+    public function confirmDelete(int $id): void
+    {
+        $this->confirmingDeleteId = $id;
+    }
+
+    public function dismissDelete(): void
+    {
+        $this->confirmingDeleteId = null;
+    }
+
+    public function delete(int $id): void
+    {
+        Services::where('id', $id)
+            ->where('tenant_id', $this->tenantId())
+            ->delete();
+
+        session()->flash('message', 'Serviço excluído com sucesso.');
+        $this->confirmingDeleteId = null;
+
+        if ($this->managingServiceId === $id) {
+            $this->managingServiceId = null;
+        }
+
+        $this->loadServices();
+    }
+
+    public function openEmployees(int $serviceId): void
+    {
+        if ($this->managingServiceId === $serviceId) {
+            $this->managingServiceId = null;
+            return;
+        }
+
+        $this->managingServiceId = $serviceId;
+        $this->showForm = false;
+
+        $this->availableEmployees = DB::table('users')
+            ->join('user_permissions', 'users.id', '=', 'user_permissions.user_id')
+            ->where('user_permissions.tenant_id', $this->tenantId())
+            ->select('users.id', 'users.name', 'users.email')
+            ->orderBy('users.name')
+            ->get();
+
+        $this->linkedEmployeeIds = DB::table('user_services')
+            ->where('service_id', $serviceId)
+            ->where('tenant_id', $this->tenantId())
+            ->pluck('user_id')
+            ->map(fn($id) => (int) $id)
+            ->toArray();
+    }
+
+    public function toggleEmployee(int $userId): void
+    {
+        $tenantId  = $this->tenantId();
+        $serviceId = $this->managingServiceId;
+
+        $exists = DB::table('user_services')
+            ->where('tenant_id', $tenantId)
+            ->where('service_id', $serviceId)
+            ->where('user_id', $userId)
+            ->exists();
+
+        if ($exists) {
+            DB::table('user_services')
+                ->where('tenant_id', $tenantId)
+                ->where('service_id', $serviceId)
+                ->where('user_id', $userId)
+                ->delete();
+        } else {
+            DB::table('user_services')->insert([
+                'tenant_id'  => $tenantId,
+                'service_id' => $serviceId,
+                'user_id'    => $userId,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        }
+
+        $this->linkedEmployeeIds = DB::table('user_services')
+            ->where('service_id', $serviceId)
+            ->where('tenant_id', $tenantId)
+            ->pluck('user_id')
+            ->map(fn($id) => (int) $id)
+            ->toArray();
+
+        $this->loadServices();
+    }
+
+    public function render()
+    {
+        return view('livewire.services.service-manager');
+    }
+}

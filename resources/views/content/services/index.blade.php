@@ -1,7 +1,7 @@
 @extends('layouts/contentNavbarLayout')
 
-@section('title', 'Agenda')
+@section('title', 'Serviços')
 
 @section('content')
-<livewire:form-create-agenda />
+<livewire:services.service-manager />
 @endsection
