@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\NewLeadMail;
 use App\Models\Lead;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Mail;
 
 class LandingController extends Controller
 {
@@ -24,7 +26,9 @@ class LandingController extends Controller
             'business_type.required' => 'Selecione o tipo de negócio.',
         ]);
 
-        Lead::create($data);
+        $lead = Lead::create($data);
+
+        Mail::to(config('mail.from.address'))->send(new NewLeadMail($lead));
 
         return redirect()->back()
             ->with('lead_success', true)
