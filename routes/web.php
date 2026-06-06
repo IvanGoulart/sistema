@@ -49,9 +49,14 @@ use App\Http\Controllers\Portal\AuthController;
 use App\Http\Controllers\Portal\PortalController;
 use App\Http\Controllers\Tenant\TenantController;
 use App\Http\Controllers\services\ServicesController;
+use App\Http\Controllers\LandingController;
+
+// ─── Landing page ─────────────────────────────────────────────────────────────
+Route::get('/', [LandingController::class, 'index'])->name('landing');
+Route::post('/interesse', [LandingController::class, 'store'])->name('landing.store');
 
 // ─── Rotas públicas (sem autenticação) ───────────────────────────────────────
-Route::get('/', [LoginBasic::class, 'index'])->name('auth-login-basic');
+Route::get('/admin', [LoginBasic::class, 'index'])->name('auth-login-basic');
 Route::post('/auth/check-authenticate', [LoginBasic::class, 'checkAuthenticate'])->name('auth-check-authenticate');
 Route::get('/logout', [LoginBasic::class, 'logout'])->name('auth.logout');
 Route::get('/auth/forgot-password-basic', [ForgotPasswordBasic::class, 'index'])->name('auth-reset-password-basic');
