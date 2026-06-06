@@ -28,7 +28,11 @@ class LandingController extends Controller
 
         $lead = Lead::create($data);
 
-        Mail::to(config('mail.from.address'))->send(new NewLeadMail($lead));
+        try {
+            Mail::to(config('mail.from.address'))->send(new NewLeadMail($lead));
+        } catch (\Exception $e) {
+            \Log::error('Email de lead falhou: ' . $e->getMessage());
+        }
 
         return redirect()->back()
             ->with('lead_success', true)
