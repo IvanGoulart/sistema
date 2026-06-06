@@ -53,7 +53,7 @@ use App\Http\Controllers\LandingController;
 
 // ─── Landing page ─────────────────────────────────────────────────────────────
 Route::get('/', [LandingController::class, 'index'])->name('landing');
-Route::post('/interesse', [LandingController::class, 'store'])->name('landing.store');
+Route::post('/interesse', [LandingController::class, 'store'])->name('landing.store')->middleware('throttle:3,10');
 
 // ─── Rotas públicas (sem autenticação) ───────────────────────────────────────
 Route::get('/admin', [LoginBasic::class, 'index'])->name('auth-login-basic');
