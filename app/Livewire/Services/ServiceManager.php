@@ -14,6 +14,7 @@ class ServiceManager extends Component
     public ?int $editingId = null;
     public string $name = '';
     public string $description = '';
+    public ?float $price = null;
 
     public ?int $confirmingDeleteId = null;
 
@@ -52,6 +53,7 @@ class ServiceManager extends Component
         $this->editingId = null;
         $this->name = '';
         $this->description = '';
+        $this->price = null;
         $this->managingServiceId = null;
         $this->showForm = true;
         $this->resetValidation();
@@ -63,6 +65,7 @@ class ServiceManager extends Component
         $this->editingId = $id;
         $this->name = $service->name;
         $this->description = $service->description ?? '';
+        $this->price = $service->price;
         $this->managingServiceId = null;
         $this->showForm = true;
         $this->resetValidation();
@@ -73,9 +76,11 @@ class ServiceManager extends Component
         $this->validate([
             'name'        => 'required|string|max:100',
             'description' => 'nullable|string|max:500',
+            'price'       => 'nullable|numeric|min:0',
         ], [
             'name.required' => 'O nome do serviço é obrigatório.',
             'name.max'      => 'O nome deve ter no máximo 100 caracteres.',
+            'price.numeric' => 'O preço deve ser um número válido.',
         ]);
 
         if ($this->editingId) {
@@ -84,6 +89,7 @@ class ServiceManager extends Component
                 ->update([
                     'name'        => trim($this->name),
                     'description' => trim($this->description) ?: null,
+                    'price'       => $this->price,
                 ]);
             session()->flash('message', 'Serviço atualizado com sucesso!');
         } else {
@@ -91,6 +97,7 @@ class ServiceManager extends Component
                 'tenant_id'   => $this->tenantId(),
                 'name'        => trim($this->name),
                 'description' => trim($this->description) ?: null,
+                'price'       => $this->price,
             ]);
             session()->flash('message', 'Serviço criado com sucesso!');
         }

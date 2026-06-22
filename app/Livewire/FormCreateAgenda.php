@@ -8,6 +8,8 @@ use Illuminate\Support\Facades\DB;
 use App\Models\services\Services;
 use App\Models\schedule\EmployeeWeeklySchedule;
 use App\Interfaces\Schedule\ScheduleRepositoryInterface;
+use App\Events\ScheduleCreated;
+use App\Models\Schedule;
 
 class FormCreateAgenda extends Component
 {
@@ -137,14 +139,28 @@ class FormCreateAgenda extends Component
             return;
         }
 
-        $scheduleRepository->createSchedule([
+        $scheduleData = [
             'service_id'  => $this->selectedService,
             'employee_id' => $this->selectedEmployee,
             'client_id'   => auth()->id(),
             'day'         => $this->selectedDay,
             'hour'        => $this->selectedHour,
             'cancel'      => false,
-        ]);
+        ];
+
+        $scheduleRepository->createSchedule($scheduleData);
+
+        $schedule = Schedule::where('client_id', auth()->id())
+            ->where('service_id', $this->selectedService)
+            ->where('employee_id', $this->selectedEmployee)
+            ->where('day', $this->selectedDay)
+            ->where('hour', $this->selectedHour)
+            ->latest()
+            ->first();
+
+        if ($schedule) {
+            ScheduleCreated::dispatch($schedule);
+        }
 
         session()->flash('message', 'Agendamento realizado com sucesso!');
 
@@ -209,10 +225,16 @@ class FormCreateAgenda extends Component
 
     public function cancelSchedule(int $scheduleId): void
     {
+        $schedule = Schedule::find($scheduleId);
+
         DB::table('schedules')
             ->where('id', $scheduleId)
             ->where('client_id', auth()->id())
             ->update(['cancel' => true, 'updated_at' => now()]);
+
+        if ($schedule) {
+            \App\Events\ScheduleCancelled::dispatch($schedule);
+        }
 
         session()->flash('message', 'Agendamento cancelado com sucesso.');
         $this->confirmingCancelId = null;

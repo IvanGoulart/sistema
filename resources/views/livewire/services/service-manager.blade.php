@@ -43,12 +43,27 @@
                             <div class="invalid-feedback">{{ $message }}</div>
                         @enderror
                     </div>
-                    <div class="col-md-8">
+                    <div class="col-md-4">
                         <label class="form-label">Descrição <span class="text-muted small">(opcional)</span></label>
                         <input type="text"
                                class="form-control"
                                wire:model="description"
                                placeholder="Breve descrição do serviço">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Valor <span class="text-muted small">(opcional)</span></label>
+                        <div class="input-group">
+                            <span class="input-group-text">R$</span>
+                            <input type="number"
+                                   class="form-control @error('price') is-invalid @enderror"
+                                   wire:model="price"
+                                   placeholder="0,00"
+                                   step="0.01"
+                                   min="0">
+                        </div>
+                        @error('price')
+                            <div class="invalid-feedback d-block">{{ $message }}</div>
+                        @enderror
                     </div>
                 </div>
                 <div class="d-flex gap-2 mt-4">
@@ -101,6 +116,7 @@
                             <tr>
                                 <th class="ps-4">Nome</th>
                                 <th>Descrição</th>
+                                <th class="text-center">Valor</th>
                                 <th class="text-center">Funcionários</th>
                                 <th class="text-end pe-4">Ações</th>
                             </tr>
@@ -110,6 +126,13 @@
                                 <tr wire:key="service-{{ $service->id }}">
                                     <td class="ps-4 fw-semibold">{{ $service->name }}</td>
                                     <td class="text-muted">{{ $service->description ?: '—' }}</td>
+                                    <td class="text-center">
+                                        @if($service->price)
+                                            <span class="badge bg-label-success">R$ {{ number_format($service->price, 2, ',', '.') }}</span>
+                                        @else
+                                            <span class="text-muted">—</span>
+                                        @endif
+                                    </td>
                                     <td class="text-center">
                                         <span class="badge rounded-pill bg-label-{{ $service->employee_count > 0 ? 'success' : 'secondary' }}">
                                             {{ $service->employee_count }}

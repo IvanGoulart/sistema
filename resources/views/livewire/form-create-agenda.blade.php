@@ -140,27 +140,36 @@
                         Resumo do Agendamento
                     </h6>
                     <div class="row g-3 mb-4">
-                        <div class="col-6 col-md-3">
+                        <div class="col-6 col-md-2">
                             <p class="mb-1 text-muted small">Serviço</p>
                             <p class="mb-0 fw-semibold">
                                 {{ collect($services)->firstWhere('id', $selectedService)?->name ?? '—' }}
                             </p>
                         </div>
-                        <div class="col-6 col-md-3">
+                        <div class="col-6 col-md-2">
                             <p class="mb-1 text-muted small">Profissional</p>
                             <p class="mb-0 fw-semibold">
                                 {{ collect($employees)->firstWhere('id', (int) $selectedEmployee)?->name ?? '—' }}
                             </p>
                         </div>
-                        <div class="col-6 col-md-3">
+                        <div class="col-6 col-md-2">
                             <p class="mb-1 text-muted small">Data</p>
                             <p class="mb-0 fw-semibold">
                                 {{ \Carbon\Carbon::parse($selectedDay)->format('d/m/Y') }}
                             </p>
                         </div>
-                        <div class="col-6 col-md-3">
+                        <div class="col-6 col-md-2">
                             <p class="mb-1 text-muted small">Horário</p>
                             <p class="mb-0 fw-semibold">{{ $selectedHour }}</p>
+                        </div>
+                        <div class="col-6 col-md-2">
+                            <p class="mb-1 text-muted small">Valor</p>
+                            <p class="mb-0 fw-semibold text-success">
+                                @php
+                                    $price = collect($services)->firstWhere('id', $selectedService)?->price;
+                                    echo $price ? 'R$ ' . number_format($price, 2, ',', '.') : 'Consultar';
+                                @endphp
+                            </p>
                         </div>
                     </div>
                     <button type="button"
