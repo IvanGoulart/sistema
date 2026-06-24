@@ -1,6 +1,5 @@
 <?php
 
-
 namespace Database\Seeders;
 
 use App\Models\Tenant;
@@ -9,33 +8,40 @@ use Illuminate\Support\Facades\DB;
 
 class UserServiceSeeder extends Seeder
 {
-  public function run(): void
-  {
-    $tenantId = Tenant::query()->firstOrFail()->id;
+    public function run(): void
+    {
+        $tenantId = Tenant::query()->firstOrFail()->id;
 
-    $users = DB::table('users')->pluck('id');
-    $services = DB::table('services')
-      ->where('tenant_id', $tenantId)
-      ->pluck('id');
+        // Apenas profissionais (employee) atendem serviços.
+        $users = DB::table('users')
+            ->join('user_permissions', 'user_permissions.user_id', '=', 'users.id')
+            ->join('permissions', 'permissions.id', '=', 'user_permissions.code_permission')
+            ->where('user_permissions.tenant_id', $tenantId)
+            ->where('permissions.name', 'employee')
+            ->pluck('users.id');
 
-    $rows = [];
+        $services = DB::table('services')
+            ->where('tenant_id', $tenantId)
+            ->pluck('id');
 
-    foreach ($users as $userId) {
-      foreach ($services as $serviceId) {
-        $rows[] = [
-          'tenant_id' => $tenantId,
-          'user_id' => $userId,
-          'service_id' => $serviceId,
-          'created_at' => now(),
-          'updated_at' => now(),
-        ];
-      }
+        $rows = [];
+
+        foreach ($users as $userId) {
+            foreach ($services as $serviceId) {
+                $rows[] = [
+                    'tenant_id' => $tenantId,
+                    'user_id' => $userId,
+                    'service_id' => $serviceId,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ];
+            }
+        }
+
+        DB::table('user_services')->upsert(
+            $rows,
+            ['tenant_id', 'user_id', 'service_id'],
+            ['updated_at']
+        );
     }
-
-    DB::table('user_services')->upsert(
-      $rows,
-      ['tenant_id', 'user_id', 'service_id'],
-      ['updated_at']
-    );
-  }
 }

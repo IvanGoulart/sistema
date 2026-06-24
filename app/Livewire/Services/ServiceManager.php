@@ -2,24 +2,30 @@
 
 namespace App\Livewire\Services;
 
-use Livewire\Component;
-use Illuminate\Support\Facades\DB;
 use App\Models\services\Services;
+use Illuminate\Support\Facades\DB;
+use Livewire\Component;
 
 class ServiceManager extends Component
 {
     public $services;
 
     public bool $showForm = false;
+
     public ?int $editingId = null;
+
     public string $name = '';
+
     public string $description = '';
+
     public ?float $price = null;
 
     public ?int $confirmingDeleteId = null;
 
     public ?int $managingServiceId = null;
+
     public $availableEmployees = [];
+
     public array $linkedEmployeeIds = [];
 
     public function mount(): void
@@ -41,9 +47,13 @@ class ServiceManager extends Component
             ->get()
             ->map(function ($service) use ($tenantId) {
                 $service->employee_count = DB::table('user_services')
-                    ->where('tenant_id', $tenantId)
-                    ->where('service_id', $service->id)
+                    ->join('user_permissions', 'user_permissions.user_id', '=', 'user_services.user_id')
+                    ->join('permissions', 'permissions.id', '=', 'user_permissions.code_permission')
+                    ->where('user_services.tenant_id', $tenantId)
+                    ->where('user_services.service_id', $service->id)
+                    ->where('permissions.name', 'employee')
                     ->count();
+
                 return $service;
             });
     }
@@ -74,12 +84,12 @@ class ServiceManager extends Component
     public function save(): void
     {
         $this->validate([
-            'name'        => 'required|string|max:100',
+            'name' => 'required|string|max:100',
             'description' => 'nullable|string|max:500',
-            'price'       => 'nullable|numeric|min:0',
+            'price' => 'nullable|numeric|min:0',
         ], [
             'name.required' => 'O nome do serviço é obrigatório.',
-            'name.max'      => 'O nome deve ter no máximo 100 caracteres.',
+            'name.max' => 'O nome deve ter no máximo 100 caracteres.',
             'price.numeric' => 'O preço deve ser um número válido.',
         ]);
 
@@ -87,17 +97,17 @@ class ServiceManager extends Component
             Services::where('id', $this->editingId)
                 ->where('tenant_id', $this->tenantId())
                 ->update([
-                    'name'        => trim($this->name),
+                    'name' => trim($this->name),
                     'description' => trim($this->description) ?: null,
-                    'price'       => $this->price,
+                    'price' => $this->price,
                 ]);
             session()->flash('message', 'Serviço atualizado com sucesso!');
         } else {
             Services::create([
-                'tenant_id'   => $this->tenantId(),
-                'name'        => trim($this->name),
+                'tenant_id' => $this->tenantId(),
+                'name' => trim($this->name),
                 'description' => trim($this->description) ?: null,
-                'price'       => $this->price,
+                'price' => $this->price,
             ]);
             session()->flash('message', 'Serviço criado com sucesso!');
         }
@@ -145,6 +155,7 @@ class ServiceManager extends Component
     {
         if ($this->managingServiceId === $serviceId) {
             $this->managingServiceId = null;
+
             return;
         }
 
@@ -153,7 +164,9 @@ class ServiceManager extends Component
 
         $this->availableEmployees = DB::table('users')
             ->join('user_permissions', 'users.id', '=', 'user_permissions.user_id')
+            ->join('permissions', 'permissions.id', '=', 'user_permissions.code_permission')
             ->where('user_permissions.tenant_id', $this->tenantId())
+            ->where('permissions.name', 'employee')
             ->select('users.id', 'users.name', 'users.email')
             ->orderBy('users.name')
             ->get();
@@ -162,13 +175,13 @@ class ServiceManager extends Component
             ->where('service_id', $serviceId)
             ->where('tenant_id', $this->tenantId())
             ->pluck('user_id')
-            ->map(fn($id) => (int) $id)
+            ->map(fn ($id) => (int) $id)
             ->toArray();
     }
 
     public function toggleEmployee(int $userId): void
     {
-        $tenantId  = $this->tenantId();
+        $tenantId = $this->tenantId();
         $serviceId = $this->managingServiceId;
 
         $exists = DB::table('user_services')
@@ -185,9 +198,9 @@ class ServiceManager extends Component
                 ->delete();
         } else {
             DB::table('user_services')->insert([
-                'tenant_id'  => $tenantId,
+                'tenant_id' => $tenantId,
                 'service_id' => $serviceId,
-                'user_id'    => $userId,
+                'user_id' => $userId,
                 'created_at' => now(),
                 'updated_at' => now(),
             ]);
@@ -197,7 +210,7 @@ class ServiceManager extends Component
             ->where('service_id', $serviceId)
             ->where('tenant_id', $tenantId)
             ->pluck('user_id')
-            ->map(fn($id) => (int) $id)
+            ->map(fn ($id) => (int) $id)
             ->toArray();
 
         $this->loadServices();

@@ -2,137 +2,138 @@
 
 namespace App\Http\Controllers\user;
 
-use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
-use App\Interfaces\UserRepositoryInterface;
 use App\Interfaces\PermissionRepositoryInterface;
+use App\Interfaces\UserRepositoryInterface;
 use App\Models\User;
-use App\Models\UserPermission;
+use Illuminate\Http\Request;
 
 class UserController extends Controller
 {
-  private UserRepositoryInterface $userRepository;
-  private PermissionRepositoryInterface $permissionRepository;
+    private UserRepositoryInterface $userRepository;
 
-  public function __construct(
-    UserRepositoryInterface $userRepository,
-    PermissionRepositoryInterface $permissionRepository
-  ) {
-    $this->userRepository = $userRepository;
-    $this->permissionRepository = $permissionRepository;
-  }
+    private PermissionRepositoryInterface $permissionRepository;
 
-  /**
-   * Display a listing of the resource.
-   */
-  public function index()
-  {
-    return view('content.user.users-list', ['users' => $this->userRepository->getAllUsers()]);
-  }
-
-  /**
-   * Show the form for creating a new resource.
-   */
-  public function create()
-  {
-    //
-  }
-
-  /**
-   * Store a newly created resource in storage.
-   */
-  public function store(Request $request)
-  {
-    // Validação dos dados
-    $validatedData = $request->validate([
-      'name' => 'required|string|max:255',
-      'email' => 'required|string|email|max:255|unique:users',
-      'password' => 'required|string|min:8',
-      'permission' => 'required',
-    ]);
-
-    $userData = new User([
-        'name' => $validatedData['name'],
-        'email' => $validatedData['email'],
-        'password' => bcrypt($validatedData['password']),
-    ]);
-
-    $userCreate = $this->userRepository->createUser($userData);
-    $this->permissionRepository->createPermission($userCreate->id, $validatedData['permission']);
-
-    // Redirecionar para alguma rota após salvar
-    return back()->with('success', 'Usuário criado com sucesso!');
-  }
-
-  /**
-   * Display the specified resource.
-   */
-  public function show(string $id)
-  {
-    //
-  }
-
-  /**
-   * Show the form for editing the specified resource.
-   */
-  public function edit(string $id)
-  {
-    $user = $this->userRepository->getUserPorId($id);
-
-    $permissions = $this->permissionRepository->getAllPermissions();
-
-    $selectedPermissionId = $user->permissions->first()?->id;
-
-    return view('content.authentications.auth-register-basic', [
-      'user' => $user,
-      'permissions' => $permissions,
-      'selectedPermissionId' => $selectedPermissionId,
-    ]);
-  }
-
-  /**
-   * Update the specified resource in storage.
-   */
-  public function update(Request $request, int $userId)
-  {
-    $this->userRepository->updateUser($userId, $request);
-    $this->permissionRepository->updatePermission($userId, $request->permission);
-    return back()->with('success', 'Usuário alterado com sucesso.');
-  }
-
-  /**
-   * Active the specified resource in storage.
-   */
-  public function active(int $userId)
-  {
-    $user = $this->userRepository->getUserPorId($userId);
-
-    if (!$user) {
-      return back()->with('error', 'Usuário não encontrado.');
+    public function __construct(
+        UserRepositoryInterface $userRepository,
+        PermissionRepositoryInterface $permissionRepository
+    ) {
+        $this->userRepository = $userRepository;
+        $this->permissionRepository = $permissionRepository;
     }
 
-    $this->userRepository->setActive($user);
-
-    return redirect()
-      ->route('users-list')
-      ->with('success', 'Usuário ativado com sucesso.');
-  }
-
-  /**
-   * Remove the specified resource from storage.
-   */
-  public function destroy(string $id)
-  {
-    $user = $this->userRepository->getUserPorId($id);
-
-    if (!$user) {
-      return back()->with('error', 'Usuário não encontrado.');
+    /**
+     * Display a listing of the resource.
+     */
+    public function index()
+    {
+        return view('content.user.users-list', ['users' => $this->userRepository->getAllUsers()]);
     }
 
-    $this->userRepository->setInactive($user);
+    /**
+     * Show the form for creating a new resource.
+     */
+    public function create()
+    {
+        //
+    }
 
-    return redirect()
-      ->route('users-list')
-      ->with('success', 'Usuário inativado com sucesso.');
-  }
+    /**
+     * Store a newly created resource in storage.
+     */
+    public function store(Request $request)
+    {
+        // Validação dos dados
+        $validatedData = $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|string|email|max:255|unique:users',
+            'password' => 'required|string|min:8',
+            'permission' => 'required|exists:permissions,id',
+        ]);
+
+        $userData = new User([
+            'name' => $validatedData['name'],
+            'email' => $validatedData['email'],
+            'password' => bcrypt($validatedData['password']),
+        ]);
+
+        $userCreate = $this->userRepository->createUser($userData);
+        $this->permissionRepository->createPermission($userCreate->id, $validatedData['permission']);
+
+        // Redirecionar para alguma rota após salvar
+        return back()->with('success', 'Usuário criado com sucesso!');
+    }
+
+    /**
+     * Display the specified resource.
+     */
+    public function show(string $id)
+    {
+        //
+    }
+
+    /**
+     * Show the form for editing the specified resource.
+     */
+    public function edit(string $id)
+    {
+        $user = $this->userRepository->getUserPorId($id);
+
+        $permissions = $this->permissionRepository->getAllPermissions();
+
+        $selectedPermissionId = $user->permissions->first()?->id;
+
+        return view('content.authentications.auth-register-basic', [
+            'user' => $user,
+            'permissions' => $permissions,
+            'selectedPermissionId' => $selectedPermissionId,
+        ]);
+    }
+
+    /**
+     * Update the specified resource in storage.
+     */
+    public function update(Request $request, int $userId)
+    {
+        $this->userRepository->updateUser($userId, $request);
+        $this->permissionRepository->updatePermission($userId, $request->permission);
+
+        return back()->with('success', 'Usuário alterado com sucesso.');
+    }
+
+    /**
+     * Active the specified resource in storage.
+     */
+    public function active(int $userId)
+    {
+        $user = $this->userRepository->getUserPorId($userId);
+
+        if (! $user) {
+            return back()->with('error', 'Usuário não encontrado.');
+        }
+
+        $this->userRepository->setActive($user);
+
+        return redirect()
+            ->route('users-list')
+            ->with('success', 'Usuário ativado com sucesso.');
+    }
+
+    /**
+     * Remove the specified resource from storage.
+     */
+    public function destroy(string $id)
+    {
+        $user = $this->userRepository->getUserPorId($id);
+
+        if (! $user) {
+            return back()->with('error', 'Usuário não encontrado.');
+        }
+
+        $this->userRepository->setInactive($user);
+
+        return redirect()
+            ->route('users-list')
+            ->with('success', 'Usuário inativado com sucesso.');
+    }
 }

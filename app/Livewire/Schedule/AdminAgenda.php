@@ -2,17 +2,22 @@
 
 namespace App\Livewire\Schedule;
 
-use Livewire\Component;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
+use Livewire\Component;
 
 class AdminAgenda extends Component
 {
     public string $weekStart;
+
     public ?int $filterEmployeeId = null;
+
     public $employees = [];
+
     public array $days = [];
+
     public array $appointments = [];
+
     public ?int $confirmingCancelId = null;
 
     public function mount(): void
@@ -58,7 +63,9 @@ class AdminAgenda extends Component
     {
         $this->employees = DB::table('users')
             ->join('user_permissions', 'users.id', '=', 'user_permissions.user_id')
+            ->join('permissions', 'permissions.id', '=', 'user_permissions.code_permission')
             ->where('user_permissions.tenant_id', $this->tenantId())
+            ->where('permissions.name', 'employee')
             ->select('users.id', 'users.name')
             ->orderBy('users.name')
             ->get();
@@ -67,18 +74,18 @@ class AdminAgenda extends Component
     public function loadAppointments(): void
     {
         $start = Carbon::parse($this->weekStart);
-        $end   = $start->copy()->endOfWeek(Carbon::SUNDAY);
+        $end = $start->copy()->endOfWeek(Carbon::SUNDAY);
 
         // Monta os 7 dias da semana
         $this->days = [];
         for ($i = 0; $i < 7; $i++) {
             $date = $start->copy()->addDays($i);
             $this->days[] = [
-                'date'     => $date->format('Y-m-d'),
-                'label'    => ucfirst($date->locale('pt_BR')->isoFormat('dddd')),
-                'short'    => $date->format('d/m'),
-                'isToday'  => $date->isToday(),
-                'isPast'   => $date->isPast() && !$date->isToday(),
+                'date' => $date->format('Y-m-d'),
+                'label' => ucfirst($date->locale('pt_BR')->isoFormat('dddd')),
+                'short' => $date->format('d/m'),
+                'isToday' => $date->isToday(),
+                'isPast' => $date->isPast() && ! $date->isToday(),
             ];
         }
 
@@ -137,13 +144,13 @@ class AdminAgenda extends Component
     public function weekLabel(): string
     {
         $start = Carbon::parse($this->weekStart)->locale('pt_BR');
-        $end   = $start->copy()->addDays(6);
+        $end = $start->copy()->addDays(6);
 
         if ($start->month === $end->month) {
-            return $start->format('d') . ' – ' . $end->format('d \d\e F \d\e Y');
+            return $start->format('d').' – '.$end->format('d \d\e F \d\e Y');
         }
 
-        return $start->format('d \d\e M') . ' – ' . $end->format('d \d\e M \d\e Y');
+        return $start->format('d \d\e M').' – '.$end->format('d \d\e M \d\e Y');
     }
 
     public function totalForWeek(): int
