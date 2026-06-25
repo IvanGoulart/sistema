@@ -6,6 +6,7 @@ use App\Models\services\Services;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\DB;
 use Laravel\Sanctum\HasApiTokens;
 
 class User extends Authenticatable
@@ -49,35 +50,74 @@ class User extends Authenticatable
         );
     }
 
-    public function hasPermission(string $permissionName): bool
+    /**
+     * Verifica se o usuário tem um papel DENTRO de uma empresa (tenant).
+     * Se $tenantId for omitido, usa a empresa ativa da sessão.
+     * Papéis são por empresa: user_permissions(tenant_id, user_id, code_permission).
+     */
+    public function hasPermission(string $permissionName, ?int $tenantId = null): bool
     {
-        return $this->permissions()
-            ->where('name', $permissionName)
-            ->exists();
+        $tenantId ??= session('tenant_id');
+
+        $query = DB::table('user_permissions')
+            ->join('permissions', 'permissions.id', '=', 'user_permissions.code_permission')
+            ->where('user_permissions.user_id', $this->id)
+            ->where('permissions.name', $permissionName);
+
+        if ($tenantId) {
+            $query->where('user_permissions.tenant_id', $tenantId);
+        }
+
+        return $query->exists();
     }
 
     /**
-     * Papel canônico do usuário: 'admin' | 'employee' | 'client' | null.
-     * Fonte da verdade: user_permissions.code_permission (papéis exclusivos).
+     * Papel do usuário numa empresa: 'admin' | 'employee' | 'client' | null.
      */
-    public function role(): ?string
+    public function role(?int $tenantId = null): ?string
     {
-        return $this->permissions->first()?->name;
+        $tenantId ??= session('tenant_id');
+
+        return DB::table('user_permissions')
+            ->join('permissions', 'permissions.id', '=', 'user_permissions.code_permission')
+            ->where('user_permissions.user_id', $this->id)
+            ->when($tenantId, fn ($q) => $q->where('user_permissions.tenant_id', $tenantId))
+            ->value('permissions.name');
     }
 
-    public function isAdmin(): bool
+    /**
+     * IDs das empresas em que o usuário tem algum dos papéis informados.
+     * Usado no login para descobrir a empresa ativa (antes da sessão existir).
+     *
+     * @param  array<int,string>  $permissionNames
+     * @return array<int,int>
+     */
+    public function tenantIdsWithAnyRole(array $permissionNames): array
     {
-        return $this->hasPermission('admin');
+        return DB::table('user_permissions')
+            ->join('permissions', 'permissions.id', '=', 'user_permissions.code_permission')
+            ->where('user_permissions.user_id', $this->id)
+            ->whereIn('permissions.name', $permissionNames)
+            ->pluck('user_permissions.tenant_id')
+            ->map(fn ($id) => (int) $id)
+            ->unique()
+            ->values()
+            ->all();
     }
 
-    public function isProfessional(): bool
+    public function isAdmin(?int $tenantId = null): bool
     {
-        return $this->hasPermission('employee');
+        return $this->hasPermission('admin', $tenantId);
     }
 
-    public function isClient(): bool
+    public function isProfessional(?int $tenantId = null): bool
     {
-        return $this->hasPermission('client');
+        return $this->hasPermission('employee', $tenantId);
+    }
+
+    public function isClient(?int $tenantId = null): bool
+    {
+        return $this->hasPermission('client', $tenantId);
     }
 
     public function tenants()

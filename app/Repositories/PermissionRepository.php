@@ -17,13 +17,13 @@ class PermissionRepository implements PermissionRepositoryInterface
 
     public function updatePermission($userId, int $permissionCode)
     {
-        // Papéis exclusivos: updateOrCreate por user_id garante uma única linha de permissão.
+        // Papel por empresa: uma linha por (tenant, usuário).
         UserPermission::updateOrCreate(
             [
+                'tenant_id' => session('tenant_id') ?? 1,
                 'user_id' => $userId,
             ],
             [
-                'tenant_id' => session('tenant_id') ?? 1,
                 'code_permission' => $permissionCode,
             ]
         );
@@ -31,13 +31,13 @@ class PermissionRepository implements PermissionRepositoryInterface
 
     public function createPermission(int $userId, int $permissionCode): bool
     {
-        // Idempotente por user_id para manter papéis exclusivos (admin|employee|client).
+        // Idempotente por (tenant, usuário): um papel do usuário dentro da empresa ativa.
         return (bool) UserPermission::updateOrCreate(
             [
+                'tenant_id' => session('tenant_id') ?? 1,
                 'user_id' => $userId,
             ],
             [
-                'tenant_id' => session('tenant_id') ?? 1,
                 'code_permission' => $permissionCode,
             ]
         );

@@ -1,55 +1,55 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\layouts\Blank;
-use App\Http\Controllers\layouts\Fluid;
-use App\Http\Controllers\icons\MdiIcons;
-use App\Http\Controllers\cards\CardBasic;
-use App\Http\Controllers\pages\MiscError;
-use App\Http\Controllers\layouts\Container;
-use App\Http\Controllers\dashboard\Analytics;
-use App\Http\Controllers\layouts\WithoutMenu;
-use App\Http\Controllers\user\UserController;
-use App\Http\Controllers\layouts\WithoutNavbar;
-use App\Http\Controllers\user_interface\Alerts;
-use App\Http\Controllers\user_interface\Badges;
-use App\Http\Controllers\user_interface\Footer;
-use App\Http\Controllers\user_interface\Modals;
-use App\Http\Controllers\user_interface\Navbar;
-use App\Http\Controllers\user_interface\Toasts;
-use App\Http\Controllers\user_interface\Buttons;
-use App\Http\Controllers\extended_ui\TextDivider;
-use App\Http\Controllers\user_interface\Carousel;
-use App\Http\Controllers\user_interface\Collapse;
-use App\Http\Controllers\user_interface\Progress;
-use App\Http\Controllers\user_interface\Spinners;
-use App\Http\Controllers\form_elements\BasicInput;
-use App\Http\Controllers\user_interface\Accordion;
-use App\Http\Controllers\user_interface\Dropdowns;
-use App\Http\Controllers\user_interface\Offcanvas;
-use App\Http\Controllers\user_interface\TabsPills;
-use App\Http\Controllers\form_elements\InputGroups;
-use App\Http\Controllers\form_layouts\VerticalForm;
-use App\Http\Controllers\user_interface\ListGroups;
-use App\Http\Controllers\user_interface\Typography;
+use App\Http\Controllers\authentications\ForgotPasswordBasic;
 use App\Http\Controllers\authentications\LoginBasic;
-use App\Http\Controllers\pages\MiscUnderMaintenance;
-use App\Http\Controllers\form_layouts\HorizontalForm;
-use App\Http\Controllers\tables\Basic as TablesBasic;
-use App\Http\Controllers\extended_ui\PerfectScrollbar;
-use App\Http\Controllers\pages\AccountSettingsAccount;
 use App\Http\Controllers\authentications\RegisterBasic;
-use App\Http\Controllers\user_interface\TooltipsPopovers;
+use App\Http\Controllers\cards\CardBasic;
+use App\Http\Controllers\dashboard\Analytics;
+use App\Http\Controllers\extended_ui\PerfectScrollbar;
+use App\Http\Controllers\extended_ui\TextDivider;
+use App\Http\Controllers\form_elements\BasicInput;
+use App\Http\Controllers\form_elements\InputGroups;
+use App\Http\Controllers\form_layouts\HorizontalForm;
+use App\Http\Controllers\form_layouts\VerticalForm;
+use App\Http\Controllers\icons\MdiIcons;
+use App\Http\Controllers\LandingController;
+use App\Http\Controllers\layouts\Blank;
+use App\Http\Controllers\layouts\Container;
+use App\Http\Controllers\layouts\Fluid;
+use App\Http\Controllers\layouts\WithoutMenu;
+use App\Http\Controllers\layouts\WithoutNavbar;
+use App\Http\Controllers\pages\AccountSettingsAccount;
 use App\Http\Controllers\pages\AccountSettingsConnections;
 use App\Http\Controllers\pages\AccountSettingsNotifications;
-use App\Http\Controllers\authentications\ForgotPasswordBasic;
-use App\Http\Controllers\user_interface\PaginationBreadcrumbs;
-use App\Http\Controllers\schedule\ScheduleController;
+use App\Http\Controllers\pages\MiscError;
+use App\Http\Controllers\pages\MiscUnderMaintenance;
 use App\Http\Controllers\Portal\AuthController;
 use App\Http\Controllers\Portal\PortalController;
-use App\Http\Controllers\Tenant\TenantController;
+use App\Http\Controllers\schedule\ScheduleController;
 use App\Http\Controllers\services\ServicesController;
-use App\Http\Controllers\LandingController;
+use App\Http\Controllers\tables\Basic as TablesBasic;
+use App\Http\Controllers\Tenant\TenantController;
+use App\Http\Controllers\user\UserController;
+use App\Http\Controllers\user_interface\Accordion;
+use App\Http\Controllers\user_interface\Alerts;
+use App\Http\Controllers\user_interface\Badges;
+use App\Http\Controllers\user_interface\Buttons;
+use App\Http\Controllers\user_interface\Carousel;
+use App\Http\Controllers\user_interface\Collapse;
+use App\Http\Controllers\user_interface\Dropdowns;
+use App\Http\Controllers\user_interface\Footer;
+use App\Http\Controllers\user_interface\ListGroups;
+use App\Http\Controllers\user_interface\Modals;
+use App\Http\Controllers\user_interface\Navbar;
+use App\Http\Controllers\user_interface\Offcanvas;
+use App\Http\Controllers\user_interface\PaginationBreadcrumbs;
+use App\Http\Controllers\user_interface\Progress;
+use App\Http\Controllers\user_interface\Spinners;
+use App\Http\Controllers\user_interface\TabsPills;
+use App\Http\Controllers\user_interface\Toasts;
+use App\Http\Controllers\user_interface\TooltipsPopovers;
+use App\Http\Controllers\user_interface\Typography;
+use Illuminate\Support\Facades\Route;
 
 // ─── Landing page ─────────────────────────────────────────────────────────────
 Route::get('/', [LandingController::class, 'index'])->name('landing');
@@ -62,8 +62,8 @@ Route::get('/logout', [LoginBasic::class, 'logout'])->name('auth.logout');
 Route::get('/auth/forgot-password-basic', [ForgotPasswordBasic::class, 'index'])->name('auth-reset-password-basic');
 Route::redirect('/home', '/dashboard');
 
-// ─── Portal do cliente ────────────────────────────────────────────────────────
-Route::prefix('portal')->group(function () {
+// ─── Portal do cliente (multi-empresa por slug: /portal/{tenantSlug}/...) ──────
+Route::prefix('portal/{tenantSlug}')->middleware('tenant')->group(function () {
 
     Route::middleware('guest')->group(function () {
         Route::get('/login', [AuthController::class, 'showLogin'])->name('portal.login');
@@ -105,7 +105,7 @@ Route::middleware(['auth', 'permission:admin'])->group(function () {
     Route::get('/services', [ServicesController::class, 'index'])->name('services.index');
 
     // Relatórios
-    Route::get('/reports', fn() => view('content.reports.index'))->name('reports.index');
+    Route::get('/reports', fn () => view('content.reports.index'))->name('reports.index');
 
     // Empresas (tenants)
     Route::prefix('tenant')->group(function () {
