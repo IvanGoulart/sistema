@@ -85,6 +85,51 @@
                 </div>
             </div>
 
+            @unless($editId)
+                {{-- Onboarding: primeiro admin da empresa --}}
+                <div class="col-12">
+                    <hr class="my-2">
+                    <h6 class="mb-0"><i class="mdi mdi-account-tie me-1"></i> Administrador da empresa</h6>
+                    <small class="text-muted">Cria o primeiro acesso administrativo deste salão.</small>
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label fw-semibold">Nome <span class="text-danger">*</span></label>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="mdi mdi-account-outline text-muted"></i></span>
+                        <input type="text"
+                               class="form-control @error('admin_name') is-invalid @enderror"
+                               wire:model.live="admin_name"
+                               placeholder="Nome do responsável">
+                        @error('admin_name') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                    </div>
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label fw-semibold">E-mail de acesso <span class="text-danger">*</span></label>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="mdi mdi-email-outline text-muted"></i></span>
+                        <input type="email"
+                               class="form-control @error('admin_email') is-invalid @enderror"
+                               wire:model.live="admin_email"
+                               placeholder="admin@empresa.com">
+                        @error('admin_email') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                    </div>
+                </div>
+
+                <div class="col-md-4">
+                    <label class="form-label fw-semibold">Senha <span class="text-danger">*</span></label>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="mdi mdi-lock-outline text-muted"></i></span>
+                        <input type="password"
+                               class="form-control @error('admin_password') is-invalid @enderror"
+                               wire:model.live="admin_password"
+                               placeholder="Mínimo 8 caracteres">
+                        @error('admin_password') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                    </div>
+                </div>
+            @endunless
+
         </div>
 
         <div class="d-flex gap-2 mt-4">

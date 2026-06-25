@@ -18,6 +18,7 @@ class User extends Authenticatable
         'email',
         'password',
         'active',
+        'is_super_admin',
     ];
 
     protected $hidden = [
@@ -28,6 +29,7 @@ class User extends Authenticatable
     protected $casts = [
         'email_verified_at' => 'datetime',
         'password' => 'hashed',
+        'is_super_admin' => 'boolean',
     ];
 
     public function services()
@@ -103,6 +105,15 @@ class User extends Authenticatable
             ->unique()
             ->values()
             ->all();
+    }
+
+    /**
+     * Super-admin = dono da plataforma (você). Papel GLOBAL, fora do sistema de
+     * permissões por empresa. Quem é super-admin gerencia o cadastro de empresas.
+     */
+    public function isSuperAdmin(): bool
+    {
+        return (bool) $this->is_super_admin;
     }
 
     public function isAdmin(?int $tenantId = null): bool

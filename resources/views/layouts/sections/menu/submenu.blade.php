@@ -2,6 +2,11 @@
   @if (isset($menu))
     @foreach ($menu as $submenu)
 
+    {{-- itens "platform" só aparecem para o super-admin (dono do SaaS) --}}
+    @if (isset($submenu->platform) && $submenu->platform && ! auth()->user()?->isSuperAdmin())
+      @continue
+    @endif
+
     {{-- active menu method --}}
     @php
       $activeClass = null;

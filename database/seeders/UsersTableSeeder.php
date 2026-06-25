@@ -15,6 +15,7 @@ class UsersTableSeeder extends Seeder
                 'name' => 'Admin',
                 'email' => 'admin@sistema.test',
                 'password' => Hash::make('password'),
+                'is_super_admin' => true,
                 'created_at' => now(),
                 'updated_at' => now(),
             ],

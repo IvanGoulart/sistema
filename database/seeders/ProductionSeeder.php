@@ -35,6 +35,9 @@ class ProductionSeeder extends Seeder
             ]
         );
 
+        // Dono da plataforma: super-admin global (gerencia o cadastro de empresas).
+        $user->forceFill(['is_super_admin' => true])->save();
+
         DB::table('user_permissions')->insertOrIgnore([
             'tenant_id'       => $tenant->id,
             'user_id'         => $user->id,

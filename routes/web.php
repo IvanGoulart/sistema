@@ -107,16 +107,6 @@ Route::middleware(['auth', 'permission:admin'])->group(function () {
     // Relatórios
     Route::get('/reports', fn () => view('content.reports.index'))->name('reports.index');
 
-    // Empresas (tenants)
-    Route::prefix('tenant')->group(function () {
-        Route::get('/', [TenantController::class, 'index'])->name('tenants.index');
-        Route::get('/create', [TenantController::class, 'create'])->name('tenants.create');
-        Route::post('/', [TenantController::class, 'store'])->name('tenants.store');
-        Route::get('/{id}/edit', [TenantController::class, 'edit'])->name('tenants.edit');
-        Route::put('/{id}', [TenantController::class, 'update'])->name('tenants.update');
-        Route::delete('/{id}', [TenantController::class, 'destroy'])->name('tenants.destroy');
-    });
-
     // Páginas do template (mantidas atrás de auth admin)
     Route::get('/pages/account-settings-account', [AccountSettingsAccount::class, 'index'])->name('pages-account-settings-account');
     Route::get('/pages/account-settings-notifications', [AccountSettingsNotifications::class, 'index'])->name('pages-account-settings-notifications');
@@ -164,4 +154,12 @@ Route::middleware(['auth', 'permission:admin'])->group(function () {
     Route::get('/form/layouts-horizontal', [HorizontalForm::class, 'index'])->name('form-layouts-horizontal');
 
     Route::get('/tables/basic', [TablesBasic::class, 'index'])->name('tables-basic');
+});
+
+// ─── Painel da plataforma (apenas super-admin / dono do SaaS) ────────────────
+// Cadastro e gestão de empresas (tenants). Fora do grupo permission:admin de
+// propósito: admin de salão NÃO pode tocar nas empresas dos outros.
+Route::middleware(['auth', 'platform'])->prefix('tenant')->group(function () {
+    Route::get('/', [TenantController::class, 'create'])->name('tenants.index');
+    Route::get('/create', [TenantController::class, 'create'])->name('tenants.create');
 });

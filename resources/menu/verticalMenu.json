@@ -28,7 +28,7 @@
           "url": "/tenant/create",
           "name": "Cadastro de Empresa",
           "slug": "cadastro-empresa",
-          "permission": "admin"
+          "platform": true
         },
         {
           "url": "/services",

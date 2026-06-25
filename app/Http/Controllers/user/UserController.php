@@ -79,6 +79,9 @@ class UserController extends Controller
     {
         $user = $this->userRepository->getUserPorId($id);
 
+        // Usuário de outra empresa (ou inexistente) → fora do alcance deste admin.
+        abort_if(! $user, 404);
+
         $permissions = $this->permissionRepository->getAllPermissions();
 
         $selectedPermissionId = $user->permissions->first()?->id;
@@ -95,6 +98,11 @@ class UserController extends Controller
      */
     public function update(Request $request, int $userId)
     {
+        // Garante que o usuário pertence à empresa ativa ANTES de qualquer
+        // escrita — senão updatePermission vincularia um usuário de outra
+        // empresa ao tenant atual.
+        abort_if(! $this->userRepository->getUserPorId($userId), 404);
+
         $this->userRepository->updateUser($userId, $request);
         $this->permissionRepository->updatePermission($userId, $request->permission);
 

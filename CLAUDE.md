@@ -52,19 +52,35 @@ Tables with `tenant_id`: `services`, `schedules`, `employee_weekly_schedules`, `
 
 ### Permission System
 
-Three permission levels: `admin`, `employee`, `client`. Permissions are stored in `user_permissions` (with `tenant_id`) and checked via middleware alias `permission`:
+There are two distinct layers — do not conflate them:
+
+**1. Per-tenant roles** — `admin`, `employee`, `client`. Stored in `user_permissions` (with `tenant_id`), checked via middleware alias `permission`. These are scoped to the active tenant (`session('tenant_id')`):
 
 ```php
 Route::middleware(['auth', 'permission:admin'])->group(...)
 Route::middleware(['auth', 'permission:client'])->group(...)
 ```
 
-`User::hasPermission(string $name)` queries through the `permissions` belongsToMany relation on `User`. The correct way to read a user's permission in views:
+`User::hasPermission(string $name, ?int $tenantId = null)` queries `user_permissions` joined to `permissions`, filtered by the given (or active) tenant. The correct way to read a user's role in views:
 
 ```php
 $user->permissions->first()?->name   // ✓ correct
 $user->userPermission->permission->name  // ✗ relation does not exist
 ```
+
+Note that `admin` here means "owner of a salon (tenant)" — it is NOT the platform owner. Many salon admins coexist, each scoped to their own tenant.
+
+**2. Platform super-admin** — the SaaS owner (you). This is a GLOBAL flag, `users.is_super_admin` (boolean), independent of any tenant. It is NOT in `user_permissions`. Check it via `User::isSuperAdmin()` and guard routes with the `platform` middleware alias (`App\Http\Middleware\PlatformAdmin`):
+
+```php
+Route::middleware(['auth', 'platform'])->group(...)  // only the platform owner
+```
+
+Tenant management (`/tenant/*` → `App\Livewire\Tenant\FormCreateTenant`) lives behind `platform`. **A salon admin must never reach tenant CRUD** — that would let them see/edit/delete other companies. Because Livewire actions hit `/livewire/update` (outside route middleware), `FormCreateTenant` re-checks authorization in `mount()` and in every mutating action (`save`/`delete`/`openEdit`/`confirmDelete`) via `abort_unless($user->isSuperAdmin(), 403)`.
+
+Mark super-admins via seeders (`ProductionSeeder`, `UsersTableSeeder`). After deploying the `is_super_admin` migration to an existing DB, run `ProductionSeeder` (or set the flag manually) — existing users default to `false`.
+
+Menu items can be hidden from non-super-admins with `"platform": true` in `resources/menu/verticalMenu.json` (filtered in `submenu.blade.php`).
 
 ### Repository Pattern
 
@@ -142,8 +158,8 @@ The portal layout loads Bootstrap 5 via CDN without Materio — `bg-label-*` cla
 ## Database Schema Reference
 
 ```
-users: id, name, email, password, active
-permissions: id, name (admin|employee|client)
+users: id, name, email, password, active, is_super_admin (platform owner, global)
+permissions: id, name (admin|employee|client)  -- per-tenant roles, NOT super-admin
 user_permissions: id, tenant_id, user_id, code_permission (FK→permissions.id)
 tenants: id, name, slug, email, phone, is_active
 tenant_user: tenant_id, user_id, role, is_active
@@ -159,8 +175,10 @@ leads: id, name, whatsapp, business_type, created_at
 
 | Role | URL | Email | Password |
 |---|---|---|---|
-| Admin | `/admin` | `admin@sistema.test` | `password` |
+| Admin (also super-admin) | `/admin` | `admin@sistema.test` | `password` |
 | Employee (professional) | `/admin` | `profissional@sistema.test` | `password` |
 | Client | `/portal/login` | `user1@sistema.test` | `password` |
 
-Production admin (via `ProductionSeeder`): `admin@salaofacil.digital` / `admin@2026`
+`admin@sistema.test` is seeded with `is_super_admin = true`, so it can reach tenant management (`/tenant`). The other roles get 403 there.
+
+Production admin (via `ProductionSeeder`): `admin@salaofacil.digital` / `admin@2026` (also super-admin)

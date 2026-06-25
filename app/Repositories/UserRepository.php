@@ -5,20 +5,43 @@ namespace App\Repositories;
 use App\Interfaces\UserRepositoryInterface;
 use App\Models\User;
 use App\Models\UserPermission;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Hash;
 
 class UserRepository implements UserRepositoryInterface
 {
+  /**
+   * Empresa (tenant) ativa. Toda gestão de usuários é escopada por ela:
+   * "meus usuários" = quem tem papel (user_permissions) nesta empresa.
+   */
+  private function tenantId(): ?int
+  {
+    return session('tenant_id');
+  }
+
+  /**
+   * Usuários que pertencem à empresa ativa, com o papel daquela empresa
+   * já carregado (permissions filtradas pelo tenant).
+   */
+  private function scopedToTenant(): Builder
+  {
+    $tenantId = $this->tenantId();
+
+    return User::query()
+      ->whereHas('permissions', fn ($q) => $q->where('user_permissions.tenant_id', $tenantId))
+      ->with(['permissions' => fn ($q) => $q->wherePivot('tenant_id', $tenantId)]);
+  }
+
   public function getAllUsers()
   {
-    $users = User::with('permissions')->get();
-
-    return $users;
+    return $this->scopedToTenant()->get();
   }
 
   public function getUserPorId($userId)
   {
-    return User::with('permissions')->find($userId);
+    // Retorna null se o usuário não pertencer à empresa ativa — impede
+    // editar/ativar/inativar usuários de outras empresas via ID.
+    return $this->scopedToTenant()->find($userId);
   }
 
   public function createUser(User $userData): User
@@ -27,9 +50,15 @@ class UserRepository implements UserRepositoryInterface
 
     return $userData;
   }
+
   public function updateUser($userId, object $userRequest): bool
   {
-    $user = User::findOrFail($userId);
+    // Defesa em profundidade: só atualiza se o usuário for da empresa ativa.
+    $user = $this->getUserPorId($userId);
+
+    if (! $user) {
+      return false;
+    }
 
     $user->name = $userRequest->input('name');
     $user->email = $userRequest->input('email');
