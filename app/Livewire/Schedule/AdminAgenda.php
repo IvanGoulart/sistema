@@ -20,9 +20,19 @@ class AdminAgenda extends Component
 
     public ?int $confirmingCancelId = null;
 
+    // Profissional (employee sem admin) só enxerga a própria agenda.
+    public bool $lockedToSelf = false;
+
     public function mount(): void
     {
         $this->weekStart = now()->startOfWeek(Carbon::MONDAY)->format('Y-m-d');
+
+        $user = auth()->user();
+        if ($user && ! $user->isAdmin() && $user->isProfessional()) {
+            $this->lockedToSelf = true;
+            $this->filterEmployeeId = $user->id;
+        }
+
         $this->loadEmployees();
         $this->loadAppointments();
     }
@@ -55,6 +65,11 @@ class AdminAgenda extends Component
 
     public function updatedFilterEmployeeId(): void
     {
+        // Profissional não pode trocar o filtro para ver outro colega.
+        if ($this->lockedToSelf) {
+            $this->filterEmployeeId = auth()->id();
+        }
+
         $this->confirmingCancelId = null;
         $this->loadAppointments();
     }
@@ -131,10 +146,16 @@ class AdminAgenda extends Component
 
     public function cancelAppointment(int $id): void
     {
-        DB::table('schedules')
+        $query = DB::table('schedules')
             ->where('id', $id)
-            ->where('tenant_id', $this->tenantId())
-            ->update(['cancel' => true, 'updated_at' => now()]);
+            ->where('tenant_id', $this->tenantId());
+
+        // Profissional só cancela agendamentos da própria agenda.
+        if ($this->lockedToSelf) {
+            $query->where('employee_id', auth()->id());
+        }
+
+        $query->update(['cancel' => true, 'updated_at' => now()]);
 
         session()->flash('message', 'Agendamento cancelado com sucesso.');
         $this->confirmingCancelId = null;

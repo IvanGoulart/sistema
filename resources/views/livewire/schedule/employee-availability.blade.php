@@ -21,7 +21,8 @@
         <p class="text-muted mb-0">Defina os dias e horários de trabalho de cada profissional</p>
     </div>
 
-    {{-- Seleção de profissional --}}
+    {{-- Seleção de profissional (oculta para o próprio profissional) --}}
+    @unless($lockedToSelf)
     <div class="card mb-4">
         <div class="card-body">
             <label class="form-label">
@@ -48,6 +49,7 @@
             @endif
         </div>
     </div>
+    @endunless
 
     {{-- Grade semanal --}}
     @if($selectedEmployeeId)

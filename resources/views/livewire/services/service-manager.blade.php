@@ -14,7 +14,7 @@
             <h4 class="mb-1">Serviços</h4>
             <p class="text-muted mb-0">Gerencie os serviços oferecidos e os profissionais vinculados</p>
         </div>
-        @if(!$showForm)
+        @if($canManage && !$showForm)
             <button class="btn btn-primary" wire:click="openCreate">
                 <i class="mdi mdi-plus me-1"></i> Novo Serviço
             </button>
@@ -140,6 +140,9 @@
                                         </span>
                                     </td>
                                     <td class="text-end pe-4">
+                                        @unless($canManage)
+                                            <span class="text-muted">—</span>
+                                        @else
                                         @if($confirmingDeleteId === $service->id)
                                             <div class="d-flex align-items-center justify-content-end gap-2">
                                                 <small class="text-danger fw-semibold">Excluir serviço?</small>
@@ -172,6 +175,7 @@
                                                 </button>
                                             </div>
                                         @endif
+                                        @endunless
                                     </td>
                                 </tr>
 

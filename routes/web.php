@@ -96,16 +96,8 @@ Route::middleware(['auth', 'permission:admin'])->group(function () {
     Route::post('/user/create', [UserController::class, 'store'])->name('user-create');
     Route::get('/auth/register-basic', [RegisterBasic::class, 'index'])->name('auth-register-basic');
 
-    // Agenda
+    // Agenda — criação de agendamento (admin)
     Route::get('/schedule/create', [ScheduleController::class, 'create'])->name('schedule-create');
-    Route::get('/schedule/availability', [ScheduleController::class, 'availability'])->name('schedule.availability');
-    Route::get('/schedule/admin', [ScheduleController::class, 'adminAgenda'])->name('schedule.admin');
-
-    // Serviços
-    Route::get('/services', [ServicesController::class, 'index'])->name('services.index');
-
-    // Relatórios
-    Route::get('/reports', fn () => view('content.reports.index'))->name('reports.index');
 
     // Páginas do template (mantidas atrás de auth admin)
     Route::get('/pages/account-settings-account', [AccountSettingsAccount::class, 'index'])->name('pages-account-settings-account');
@@ -154,6 +146,17 @@ Route::middleware(['auth', 'permission:admin'])->group(function () {
     Route::get('/form/layouts-horizontal', [HorizontalForm::class, 'index'])->name('form-layouts-horizontal');
 
     Route::get('/tables/basic', [TablesBasic::class, 'index'])->name('tables-basic');
+});
+
+// ─── Painel compartilhado (admin OU profissional/employee) ───────────────────
+// O profissional vê apenas os PRÓPRIOS dados (agenda/disponibilidade travadas
+// nele) e os serviços em modo somente-leitura. O escopo é feito nos componentes
+// Livewire conforme o papel na empresa ativa.
+Route::middleware(['auth', 'permission:admin,employee'])->group(function () {
+    Route::get('/schedule/admin', [ScheduleController::class, 'adminAgenda'])->name('schedule.admin');
+    Route::get('/schedule/availability', [ScheduleController::class, 'availability'])->name('schedule.availability');
+    Route::get('/services', [ServicesController::class, 'index'])->name('services.index');
+    Route::get('/reports', fn () => view('content.reports.index'))->name('reports.index');
 });
 
 // ─── Painel da plataforma (apenas super-admin / dono do SaaS) ────────────────

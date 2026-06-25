@@ -11,6 +11,9 @@ class EmployeeAvailability extends Component
     public $employees = [];
     public ?int $selectedEmployeeId = null;
 
+    // Profissional (employee sem admin) só edita a própria disponibilidade.
+    public bool $lockedToSelf = false;
+
     public array $schedule = [];
 
     private const DAYS = [
@@ -25,8 +28,19 @@ class EmployeeAvailability extends Component
 
     public function mount(): void
     {
-        $this->loadEmployees();
         $this->resetSchedule();
+
+        $user = auth()->user();
+        if ($user && ! $user->isAdmin() && $user->isProfessional()) {
+            // Profissional: trava no próprio cadastro e já carrega a agenda dele.
+            $this->lockedToSelf = true;
+            $this->selectedEmployeeId = $user->id;
+            $this->updatedSelectedEmployeeId();
+
+            return;
+        }
+
+        $this->loadEmployees();
     }
 
     private function tenantId(): int
@@ -78,6 +92,11 @@ class EmployeeAvailability extends Component
 
     public function save(): void
     {
+        // Profissional só salva a própria disponibilidade.
+        if ($this->lockedToSelf) {
+            $this->selectedEmployeeId = auth()->id();
+        }
+
         if (!$this->selectedEmployeeId) {
             $this->addError('selectedEmployeeId', 'Selecione um profissional.');
             return;

@@ -39,7 +39,8 @@
                     </button>
                 </div>
 
-                {{-- Filtro por profissional --}}
+                {{-- Filtro por profissional (oculto para o próprio profissional) --}}
+                @unless($lockedToSelf)
                 <div class="d-flex align-items-center gap-2">
                     <label class="text-muted small mb-0 flex-shrink-0">
                         <i class="mdi mdi-account-outline me-1"></i>Profissional:
@@ -52,6 +53,7 @@
                         @endforeach
                     </select>
                 </div>
+                @endunless
 
             </div>
         </div>

@@ -33,7 +33,11 @@ class LoginBasic extends Controller
             // Empresa ativa = primeira em que tem acesso (switcher virá na Fase 3).
             session(['tenant_id' => $tenantIds[0]]);
 
-            return redirect()->intended('/dashboard');
+            // Admin cai no dashboard; profissional (sem admin) vai direto à agenda,
+            // pois /dashboard é exclusivo de admin.
+            $destino = Auth::user()->isAdmin() ? '/dashboard' : route('schedule.admin');
+
+            return redirect()->intended($destino);
         }
 
         // Autenticação falhou

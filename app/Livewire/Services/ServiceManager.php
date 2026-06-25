@@ -28,14 +28,28 @@ class ServiceManager extends Component
 
     public array $linkedEmployeeIds = [];
 
+    // Só admin gerencia serviços; profissional vê em modo somente-leitura.
+    public bool $canManage = false;
+
     public function mount(): void
     {
+        $this->canManage = (bool) auth()->user()?->isAdmin();
         $this->loadServices();
     }
 
     private function tenantId(): int
     {
         return session('tenant_id') ?? 1;
+    }
+
+    /**
+     * Bloqueia ações de escrita para quem não é admin (ex.: profissional).
+     * Necessário pois ações Livewire chegam por /livewire/update, fora do
+     * middleware de rota.
+     */
+    private function authorizeManage(): void
+    {
+        abort_unless($this->canManage, 403);
     }
 
     public function loadServices(): void
@@ -60,6 +74,7 @@ class ServiceManager extends Component
 
     public function openCreate(): void
     {
+        $this->authorizeManage();
         $this->editingId = null;
         $this->name = '';
         $this->description = '';
@@ -71,7 +86,8 @@ class ServiceManager extends Component
 
     public function openEdit(int $id): void
     {
-        $service = Services::findOrFail($id);
+        $this->authorizeManage();
+        $service = Services::where('tenant_id', $this->tenantId())->findOrFail($id);
         $this->editingId = $id;
         $this->name = $service->name;
         $this->description = $service->description ?? '';
@@ -83,6 +99,7 @@ class ServiceManager extends Component
 
     public function save(): void
     {
+        $this->authorizeManage();
         $this->validate([
             'name' => 'required|string|max:100',
             'description' => 'nullable|string|max:500',
@@ -127,6 +144,7 @@ class ServiceManager extends Component
 
     public function confirmDelete(int $id): void
     {
+        $this->authorizeManage();
         $this->confirmingDeleteId = $id;
     }
 
@@ -137,6 +155,7 @@ class ServiceManager extends Component
 
     public function delete(int $id): void
     {
+        $this->authorizeManage();
         Services::where('id', $id)
             ->where('tenant_id', $this->tenantId())
             ->delete();
@@ -153,6 +172,7 @@ class ServiceManager extends Component
 
     public function openEmployees(int $serviceId): void
     {
+        $this->authorizeManage();
         if ($this->managingServiceId === $serviceId) {
             $this->managingServiceId = null;
 
@@ -181,6 +201,7 @@ class ServiceManager extends Component
 
     public function toggleEmployee(int $userId): void
     {
+        $this->authorizeManage();
         $tenantId = $this->tenantId();
         $serviceId = $this->managingServiceId;
 

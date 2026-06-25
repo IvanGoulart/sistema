@@ -16,13 +16,14 @@
           "url": "/auth/register-basic",
           "name": "Novo Usuário",
           "slug": "novo-usuario",
+          "permission": "admin",
           "target": ""
         },
         {
           "url": "/schedule/admin",
           "name": "Agenda",
           "slug": "agenda",
-          "permission": "admin"
+          "permission": ["admin", "employee"]
         },
         {
           "url": "/tenant/create",
@@ -34,19 +35,19 @@
           "url": "/services",
           "name": "Serviços",
           "slug": "services",
-          "permission": "admin"
+          "permission": ["admin", "employee"]
         },
         {
           "url": "/schedule/availability",
           "name": "Disponibilidade",
           "slug": "schedule-availability",
-          "permission": "admin"
+          "permission": ["admin", "employee"]
         },
         {
           "url": "/reports",
           "name": "Relatórios",
           "slug": "reports",
-          "permission": "admin"
+          "permission": ["admin", "employee"]
         }
       ]
     }

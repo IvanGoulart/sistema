@@ -2,8 +2,23 @@
   @if (isset($menu))
     @foreach ($menu as $submenu)
 
-    {{-- itens "platform" só aparecem para o super-admin (dono do SaaS) --}}
-    @if (isset($submenu->platform) && $submenu->platform && ! auth()->user()?->isSuperAdmin())
+    {{-- Filtro de visibilidade por papel --}}
+    @php
+      $menuUser = auth()->user();
+      $hideItem = false;
+
+      // Itens "platform" só para o super-admin (dono do SaaS).
+      if (isset($submenu->platform) && $submenu->platform && ! $menuUser?->isSuperAdmin()) {
+        $hideItem = true;
+      }
+
+      // Itens com "permission" (string ou array) exigem um dos papéis na empresa ativa.
+      if (! $hideItem && isset($submenu->permission)) {
+        $needed = is_array($submenu->permission) ? $submenu->permission : [$submenu->permission];
+        $hideItem = ! collect($needed)->contains(fn ($p) => $menuUser?->hasPermission($p));
+      }
+    @endphp
+    @if ($hideItem)
       @continue
     @endif
 
