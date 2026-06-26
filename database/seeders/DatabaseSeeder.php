@@ -11,13 +11,15 @@ class DatabaseSeeder extends Seeder
    */
   public function run(): void
   {
+    // Matriz de credenciais para testar cada permissão e o isolamento entre
+    // empresas no navegador. TestMatrixSeeder é auto-contido (cria empresas,
+    // usuários, papéis, serviços e disponibilidade). Os seeders legados
+    // (UsersTableSeeder, UserPermissionsSeeder, ServiceSeeder, UserServiceSeeder,
+    // AvailableEmployeeScheduleSeeder) assumiam uma única empresa e ficaram fora
+    // da cadeia de dev — continuam no repo para referência.
     $this->call([
       PermissionsTableSeeder::class,
-      UsersTableSeeder::class,
-      ServiceSeeder::class,
-      UserPermissionsSeeder::class,
-      UserServiceSeeder::class,
-      AvailableEmployeeScheduleSeeder::class
+      TestMatrixSeeder::class,
     ]);
   }
 }

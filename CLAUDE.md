@@ -173,12 +173,25 @@ leads: id, name, whatsapp, business_type, created_at
 
 ## Development Credentials (local seeder)
 
-| Role | URL | Email | Password |
-|---|---|---|---|
-| Admin (also super-admin) | `/admin` | `admin@sistema.test` | `password` |
-| Employee (professional) | `/admin` | `profissional@sistema.test` | `password` |
-| Client | `/portal/login` | `user1@sistema.test` | `password` |
+`DatabaseSeeder` runs `TestMatrixSeeder`, which builds a full test matrix across **two
+companies** so every permission AND cross-company isolation can be exercised. Two tenants:
+**Empresa Padrão** (slug `empresa-padrao`) and **Salão Modelo** (slug `salao-modelo`).
+All passwords are `password`.
 
-`admin@sistema.test` is seeded with `is_super_admin = true`, so it can reach tenant management (`/tenant`). The other roles get 403 there.
+| Role | URL | Email | Company |
+|---|---|---|---|
+| Super-admin (platform) + salon admin | `/admin` | `admin@sistema.test` | A |
+| Salon admin (NOT super-admin) | `/admin` | `gerente@sistema.test` | A |
+| Employee (professional) | `/admin` | `profissional@sistema.test` | A |
+| Client | `/portal/empresa-padrao/login` | `user1@sistema.test` | A |
+| Salon admin (NOT super-admin) | `/admin` | `admin-b@sistema.test` | B |
+| Client | `/portal/salao-modelo/login` | `cliente-b@sistema.test` | B |
+
+The client portal login is **slug-based** (`/portal/{slug}/login`) — a client can only log in
+at their own company's slug.
+
+Only `admin@sistema.test` has `is_super_admin = true`, so only it reaches tenant management
+(`/tenant`). `gerente@sistema.test` and `admin-b@sistema.test` are salon admins → 403 at `/tenant`,
+and each sees only their own company's data.
 
 Production admin (via `ProductionSeeder`): `admin@salaofacil.digital` / `admin@2026` (also super-admin)
