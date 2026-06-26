@@ -26,17 +26,21 @@ class ProductionSeeder extends Seeder
             ]
         );
 
-        $user = User::firstOrCreate(
+        // Idempotente: reaplica senha/active/super-admin mesmo se o usuário já
+        // existir (firstOrCreate antigo não atualizava nada num 2º deploy).
+        // A senha vem de PROD_ADMIN_PASSWORD para não ficar fixa no código nem
+        // ser sobrescrita sem querer — fallback admin@2026 no primeiro deploy.
+        $password = env('PROD_ADMIN_PASSWORD', 'admin@2026');
+
+        $user = User::updateOrCreate(
             ['email' => 'admin@salaofacil.digital'],
             [
-                'name'     => 'Admin',
-                'password' => Hash::make('admin@2026'),
-                'active'   => true,
+                'name'           => 'Admin',
+                'password'       => Hash::make($password),
+                'active'         => true,
+                'is_super_admin' => true, // dono da plataforma (papel GLOBAL)
             ]
         );
-
-        // Dono da plataforma: super-admin global (gerencia o cadastro de empresas).
-        $user->forceFill(['is_super_admin' => true])->save();
 
         DB::table('user_permissions')->insertOrIgnore([
             'tenant_id'       => $tenant->id,
@@ -48,6 +52,6 @@ class ProductionSeeder extends Seeder
             $user->id => ['role' => 'admin', 'is_active' => true],
         ]);
 
-        $this->command->info('Admin criado: admin@salaofacil.digital / admin@2026');
+        $this->command->info('Super-admin garantido: admin@salaofacil.digital (senha via PROD_ADMIN_PASSWORD; fallback admin@2026).');
     }
 }
