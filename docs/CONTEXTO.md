@@ -1,15 +1,15 @@
 # Sistema de Agendamento SaaS — Documentação de Contexto
 
-> Gerado em: Junho/2026 | Autor: IvanGoulart | Stack: Laravel 10 + Livewire 3
+> Atualizado em: Junho/2026 (Fase 1 — multi-tenancy ligado) | Autor: IvanGoulart | Stack: Laravel 10 + Livewire 3
 
 ---
 
 ## 1. Visão Geral do Projeto
 
-Sistema SaaS de agendamento de serviços com dois painéis distintos:
+Sistema SaaS de agendamento de serviços para salões/negócios de beleza, com a marca **"Salão Fácil"**. Dois painéis distintos com layouts e fluxos de autenticação separados:
 
-- **Painel Administrativo** — para admins e funcionários gerenciarem agenda, serviços, usuários e disponibilidade
-- **Portal do Cliente** — para clientes se cadastrarem, agendarem serviços e acompanharem atendimentos
+- **Painel Administrativo** (`/dashboard`, `/admin`) — admins e profissionais gerenciam agenda, serviços, usuários e disponibilidade
+- **Portal do Cliente** (`/portal/{slug}`) — clientes se cadastram, agendam serviços e acompanham atendimentos, **por empresa (slug)**
 
 ---
 
@@ -28,61 +28,80 @@ Sistema SaaS de agendamento de serviços com dois painéis distintos:
 
 ### Docker
 ```bash
-# Subir containers
-./vendor/bin/sail up -d
-
-# Acessar container
-docker compose exec laravel.test bash
-
-# Rodar migrations
-php artisan migrate
-
-# Rodar seeders
-php artisan db:seed
+./vendor/bin/sail up -d                          # Subir containers
+docker compose exec laravel.test bash            # Acessar container
+php artisan migrate                              # Rodar migrations
+php artisan db:seed                              # Seed de dev (TestMatrixSeeder)
+php artisan db:seed --class=ProductionSeeder     # Seed de produção
 ```
 
 ---
 
-## 3. Arquitetura Multi-Tenant
+## 3. Arquitetura Multi-Tenant (Fase 1 — ligada)
 
-- Cada empresa (tenant) tem seu próprio `tenant_id`
-- Isolamento via `session('tenant_id') ?? 1`
-- Tabela `tenants`: `id`, `name`, `slug`, `email`, `phone`, `is_active`
-- Tabela `tenant_user`: pivot entre `tenants` e `users` com `role` e `is_active`
-- Todos os dados de negócio (serviços, agendamentos, disponibilidade) são filtrados por `tenant_id`
+- Cada empresa (tenant) tem seu próprio `tenant_id`.
+- A empresa ativa fica na **sessão** (`session('tenant_id')`), resolvida de formas diferentes em cada painel:
+  - **Portal**: o middleware `ResolveTenant` lê o **slug** da URL (`/portal/{tenantSlug}/...`), valida que a empresa existe e está ativa (404 se não), grava `tenant_id` na sessão e define o slug como default de rota (`URL::defaults`) para que todos os `route('portal.*')` continuem funcionando.
+  - **Admin**: no login (`LoginBasic@checkAuthenticate`), a empresa ativa = **primeira empresa** em que o usuário tem papel `admin` ou `employee`. O seletor de empresa (switcher) virá em fase posterior.
+- Tabela `tenants`: `id`, `name`, `slug` (único), `email`, `phone`, `is_active`.
+- Tabela `tenant_user`: pivot entre `tenants` e `users` com `role` e `is_active`.
+- **Todo dado de negócio é filtrado por `tenant_id`**. Tabelas com `tenant_id`: `services`, `schedules`, `employee_weekly_schedules`, `user_permissions`, `user_services`.
+
+```php
+$tenantId = session('tenant_id') ?? 1;
+DB::table('services')->where('tenant_id', $tenantId)->get();
+```
 
 ---
 
-## 4. Sistema de Permissões
+## 4. Sistema de Permissões — DUAS camadas distintas
 
-### Tabelas
+> Não confundir as duas. São independentes.
+
+### 4.1 Papéis por empresa (`admin` | `employee` | `client`)
+Vivem em `user_permissions` **com `tenant_id`** — ou seja, um usuário pode ser `admin` na Empresa A e `client` na Empresa B. Verificados pelo middleware alias `permission`.
+
 ```
 permissions: id, name (admin | employee | client)
 user_permissions: id, tenant_id, user_id, code_permission (FK → permissions.id)
 ```
 
-### Middleware
-- `CheckPermission` — verifica `permission:admin` ou `permission:client` via `User::hasPermission()`
-- Registrado como alias `permission` em `app/Http/Kernel.php`
-
-### Relação no Model User
 ```php
-// User::permissions() — belongsToMany
-public function permissions() {
-    return $this->belongsToMany(Permission::class, 'user_permissions', 'user_id', 'code_permission');
-}
-
-// Verificar permissão
-public function hasPermission(string $permissionName): bool {
-    return $this->permissions()->where('name', $permissionName)->exists();
-}
-
-// CORRETO — para acessar permissão do usuário na view:
-$user->permissions->first()?->name
-
-// ERRADO — relação que NÃO existe no model:
-$user->userPermission->permission->name  // ← bug conhecido, já corrigido
+// Rotas
+Route::middleware(['auth', 'permission:admin'])->group(...)
+Route::middleware(['auth', 'permission:admin,employee'])->group(...)  // QUALQUER um dos papéis
+Route::middleware(['auth', 'permission:client'])->group(...)
 ```
+
+`User::hasPermission(string $name, ?int $tenantId = null)` consulta `user_permissions` juntado a `permissions`, **filtrado pela empresa ativa** (`session('tenant_id')`) quando `$tenantId` é omitido.
+
+> **`admin` aqui = dono de UM salão (tenant)** — NÃO é o dono da plataforma. Vários admins de salão coexistem, cada um escopado à própria empresa.
+
+Helpers no model `User`: `isAdmin()`, `isProfessional()` (=`employee`), `isClient()`, `role()`, `tenantIdsWithAnyRole([...])`.
+
+```php
+// Ler o papel do usuário numa view:
+$user->permissions->first()?->name      // ✓ correto
+$user->userPermission->permission->name // ✗ relação que não existe
+```
+
+### 4.2 Super-admin da plataforma (dono do SaaS)
+Flag **global** `users.is_super_admin` (boolean), **independente de qualquer empresa** e **fora** de `user_permissions`. Verificado por `User::isSuperAdmin()` e protegido pelo middleware alias `platform` (`App\Http\Middleware\PlatformAdmin`).
+
+```php
+Route::middleware(['auth', 'platform'])->group(...)  // só o dono da plataforma
+```
+
+A gestão de empresas (`/tenant/*` → `App\Livewire\Tenant\FormCreateTenant`) fica atrás de `platform`. **Um admin de salão nunca pode chegar ao CRUD de tenants** — isso vazaria/permitiria editar outras empresas. Como ações Livewire batem em `/livewire/update` (fora do middleware de rota), `FormCreateTenant` **re-checa a autorização** em `mount()` e em toda ação mutante (`save`/`delete`/`openEdit`/`confirmDelete`) via `abort_unless($user->isSuperAdmin(), 403)`.
+
+Marcar super-admins via seeders (`ProductionSeeder`, `TestMatrixSeeder`). Itens de menu podem ser escondidos de não-super-admins com `"platform": true` em `resources/menu/verticalMenu.json` (filtrado em `submenu.blade.php`).
+
+### Middlewares (aliases em `app/Http/Kernel.php`)
+| Alias | Classe | Função |
+|---|---|---|
+| `permission` | `CheckPermission` | Papel por empresa; aceita lista (`permission:admin,employee`) |
+| `platform` | `PlatformAdmin` | Só super-admin (flag global), não depende da empresa ativa |
+| `tenant` | `ResolveTenant` | Resolve empresa pelo slug da URL do portal |
 
 ---
 
@@ -90,33 +109,39 @@ $user->userPermission->permission->name  // ← bug conhecido, já corrigido
 
 ```
 users
-  id, name, email, password, active, created_at, updated_at
+  id, name, email, password, active, is_super_admin (plataforma, global), timestamps
 
 permissions
-  id, name (admin | employee | client)
+  id, name (admin | employee | client)   -- papéis por empresa, NÃO super-admin
 
 user_permissions
-  id, tenant_id, user_id, code_permission, created_at, updated_at
+  id, tenant_id, user_id, code_permission (FK → permissions.id), timestamps
+  UNIQUE relacionado a (tenant_id, user_id, code_permission)
 
 tenants
-  id, name, slug, email, phone, is_active, created_at, updated_at
+  id, name, slug (único), email, phone, is_active, timestamps
 
 tenant_user
   tenant_id, user_id, role, is_active
 
 services
-  id, tenant_id, name, description, created_at, updated_at
+  id, tenant_id, name, description, price (decimal 10,2, nullable), timestamps
 
 user_services (pivot employees ↔ services)
-  user_id, service_id
+  user_id, service_id, tenant_id
 
 schedules
-  id, employee_id, client_id, service_id, day (date), hour (time), cancel (boolean)
+  id, tenant_id, employee_id, client_id, service_id, day (date), hour (time), cancel (bool)
 
 employee_weekly_schedules
   id, tenant_id, employee_id, day_of_week (0=Dom…6=Sab), start_time, end_time
   UNIQUE(tenant_id, employee_id, day_of_week)
+
+leads
+  id, name, whatsapp, business_type, created_at
 ```
+
+> Existem também migrations de `financial_categories` e `financial_entries` (Mar/2026), ainda não conectadas à UI — área financeira futura.
 
 ---
 
@@ -125,24 +150,26 @@ employee_weekly_schedules
 ### Públicas (sem autenticação)
 | Método | URI | Nome | Descrição |
 |---|---|---|---|
-| GET | `/` | `auth-login-basic` | Login admin |
+| GET | `/` | `landing` | Landing page Salão Fácil |
+| POST | `/interesse` | `landing.store` | Captura de lead (throttle 3/10min) |
+| GET | `/admin` | `auth-login-basic` | Login admin |
 | POST | `/auth/check-authenticate` | `auth-check-authenticate` | Processar login admin |
 | GET | `/logout` | `auth.logout` | Logout admin |
 
-### Portal do Cliente
+### Portal do Cliente — multi-empresa por slug (`portal/{tenantSlug}`, middleware `tenant`)
 | Método | URI | Nome | Middleware |
 |---|---|---|---|
-| GET | `/portal/login` | `portal.login` | guest |
-| POST | `/portal/login` | `portal.login.post` | guest |
-| GET | `/portal/cadastro` | `portal.cadastro` | guest |
-| POST | `/portal/register` | `portal.register` | guest |
-| GET | `/portal` | `portal.home` | auth + permission:client |
-| GET | `/portal/agendar` | `portal.agendar` | auth + permission:client |
-| GET | `/portal/meus-agendamentos` | `portal.meus-agendamentos` | auth + permission:client |
-| PATCH | `/portal/cancelar/{id}` | `portal.cancelar` | auth + permission:client |
-| POST | `/portal/logout` | `portal.logout` | auth + permission:client |
+| GET | `/portal/{slug}/login` | `portal.login` | tenant + guest |
+| POST | `/portal/{slug}/login` | `portal.login.post` | tenant + guest |
+| GET | `/portal/{slug}/cadastro` | `portal.cadastro` | tenant + guest |
+| POST | `/portal/{slug}/register` | `portal.register` | tenant + guest |
+| GET | `/portal/{slug}` | `portal.home` | tenant + auth + permission:client |
+| GET | `/portal/{slug}/agendar` | `portal.agendar` | tenant + auth + permission:client |
+| GET | `/portal/{slug}/meus-agendamentos` | `portal.meus-agendamentos` | tenant + auth + permission:client |
+| PATCH | `/portal/{slug}/cancelar/{id}` | `portal.cancelar` | tenant + auth + permission:client |
+| POST | `/portal/{slug}/logout` | `portal.logout` | tenant + auth + permission:client |
 
-### Painel Admin (todas requerem auth + permission:admin)
+### Painel Admin (auth + permission:admin)
 | Método | URI | Nome | Descrição |
 |---|---|---|---|
 | GET | `/dashboard` | `dashboard-analytics` | Dashboard |
@@ -150,11 +177,22 @@ employee_weekly_schedules
 | GET | `/user/edit/{id}` | `user-edit` | Editar usuário |
 | PUT | `/user/update/{id}` | `user-update` | Atualizar usuário |
 | POST | `/user/create` | `user-create` | Criar usuário |
-| GET | `/auth/register-basic` | `auth-register-basic` | Form novo usuário |
+| GET | `/schedule/create` | `schedule-create` | Form de agendamento (admin) |
+
+### Painel compartilhado (auth + permission:admin,employee)
+> O profissional vê apenas os **próprios** dados (agenda/disponibilidade travadas nele) e serviços em modo leitura. O escopo é feito nos componentes Livewire conforme o papel na empresa ativa.
+
+| Método | URI | Nome | Descrição |
+|---|---|---|---|
+| GET | `/schedule/admin` | `schedule.admin` | Agenda semanal |
+| GET | `/schedule/availability` | `schedule.availability` | Disponibilidade de funcionários |
 | GET | `/services` | `services.index` | Gestão de serviços |
-| GET | `/schedule/admin` | `schedule.admin` | Agenda admin (semanal) |
-| GET | `/schedule/availability` | `schedule.availability` | Disponibilidade funcionários |
 | GET | `/reports` | `reports.index` | Relatório de agendamentos |
+
+### Painel da plataforma (auth + platform — só super-admin)
+| Método | URI | Nome | Descrição |
+|---|---|---|---|
+| GET | `/tenant` | `tenants.index` | Gestão de empresas |
 | GET | `/tenant/create` | `tenants.create` | Cadastro de empresa |
 
 ---
@@ -163,11 +201,11 @@ employee_weekly_schedules
 
 | Componente | Arquivo PHP | Descrição |
 |---|---|---|
-| `services.service-manager` | `app/Livewire/Services/ServiceManager.php` | CRUD de serviços + vínculo com funcionários |
-| `schedule.admin-agenda` | `app/Livewire/Schedule/AdminAgenda.php` | Agenda semanal admin com filtros |
+| `services.service-manager` | `app/Livewire/Services/ServiceManager.php` | CRUD de serviços + vínculo com funcionários (leitura p/ employee) |
+| `schedule.admin-agenda` | `app/Livewire/Schedule/AdminAgenda.php` | Agenda semanal com filtros (escopada ao employee) |
 | `schedule.employee-availability` | `app/Livewire/Schedule/EmployeeAvailability.php` | Disponibilidade semanal por funcionário |
-| `form-create-agenda` | `app/Livewire/FormCreateAgenda.php` | Agendamento pelo cliente (admin e portal) |
-| `tenant.form-create-tenant` | `app/Livewire/Tenant/FormCreateTenant.php` | CRUD de empresas inline |
+| `form-create-agenda` | `app/Livewire/FormCreateAgenda.php` | Agendamento (admin e portal) |
+| `tenant.form-create-tenant` | `app/Livewire/Tenant/FormCreateTenant.php` | CRUD de empresas inline (re-checa super-admin) |
 | `reports.agenda-report` | `app/Livewire/Reports/AgendaReport.php` | Relatório com filtros reativos |
 
 ---
@@ -175,196 +213,162 @@ employee_weekly_schedules
 ## 8. Funcionalidades Implementadas
 
 ### 8.1 Gestão de Serviços
-- CRUD completo via Livewire (sem reload de página)
-- Vínculo de funcionários por serviço (tabela `user_services`)
-- Exclusão com confirmação inline (Sim/Não)
-- Contagem de funcionários por serviço
+- CRUD completo via Livewire, com **preço** (`price`).
+- Vínculo de funcionários por serviço (`user_services`), escopado por tenant.
+- Exclusão com confirmação inline; profissional vê em modo somente-leitura.
 
 ### 8.2 Disponibilidade Semanal de Funcionários
-- Grade de 7 dias (Dom–Sab) com toggle on/off por dia
-- Campos de horário início/fim por dia
-- Salva na tabela `employee_weekly_schedules`
-- Lógica: apaga todos os registros do funcionário e reinsere apenas os dias ativos
+- Grade de 7 dias (Dom–Sab) com toggle on/off e horário início/fim por dia.
+- Salva em `employee_weekly_schedules`; profissional só edita a própria.
 
-### 8.3 Agenda (Admin)
-- Visão semanal (Seg–Dom)
-- Navegação por semana (anterior / próxima / hoje)
-- Filtro por funcionário
-- Cards por dia com tabela de agendamentos
-- Cancelamento com confirmação inline
-- Dia atual destacado em azul, dias passados em cinza
+### 8.3 Agenda (Admin/Profissional)
+- Visão semanal com navegação, filtro por funcionário (escopado ao employee), cancelamento com confirmação inline.
 
 ### 8.4 Agenda (Formulário — Admin e Portal)
-- Seleção de data (mínimo: hoje)
-- Carrega funcionários disponíveis baseado no `day_of_week` da data selecionada
-- Exibe horários disponíveis como pills clicáveis
-- Card de resumo antes de confirmar
-- Reset completo após agendamento
-- Exibe próximos e histórico de agendamentos do usuário logado
+- Seleção de data, funcionários disponíveis por `day_of_week`, horários como pills, resumo e reset pós-agendamento.
 
-### 8.5 Portal do Cliente
-- **Login** — com validação de `permission:client` (admin não pode entrar)
-- **Cadastro** — cria usuário + tenant + permissão `client` em transação
-- **Agendar** — usa o mesmo componente Livewire `form-create-agenda`
-- **Meus Agendamentos** — lista próximos e histórico, com cancelamento via POST
+### 8.5 Portal do Cliente (multi-empresa por slug)
+- **Login slug-based**: cliente só entra no slug da própria empresa.
+- **Cadastro**: cria usuário + permissão `client` no tenant resolvido pelo slug, em transação.
+- **Agendar** / **Meus Agendamentos** com cancelamento.
 
 ### 8.6 Relatório de Agendamentos
-- Filtros: período (data início/fim), funcionário, serviço
-- Cards de resumo: total, realizados, cancelados, taxa de cancelamento
-- Tabela detalhada com todos os dados
-- Botão imprimir → `window.print()` com CSS que oculta navbar/menu
+- Filtros (período/funcionário/serviço), cards de resumo, tabela detalhada, imprimir.
 
-### 8.7 Melhorias de Layout
-- Lista de usuários com cards de resumo (total, admins, funcionários, clientes)
-- Avatar com inicial do nome em vez de imagem estática
-- Badges de permissão coloridos: admin=vermelho, employee=amarelo, client=azul
-- Cadastro de empresa com CRUD inline (editar/excluir sem sair da página)
-- Formulário de usuário integrado ao layout do admin
+### 8.7 Landing Page / Captura de Leads
+- `GET /` → `LandingController@index`. Form `POST /interesse` (throttle 3/10min/IP) salva em `leads` e envia `NewLeadMail`. Falha de e-mail é capturada e logada — não quebra o form.
+
+### 8.8 Multi-tenancy + Super-admin (Fase 1)
+- Isolamento por empresa em todos os dados de negócio.
+- Separação clara entre **super-admin da plataforma** (flag global) e **admin de salão** (papel por empresa).
+- Profissional (`employee`) com acesso ao painel restrito aos próprios dados.
 
 ---
 
 ## 9. Segurança
 
-### Correções aplicadas
-- `/dashboard` e todas as rotas do painel admin agora exigem `auth + permission:admin`
-- `/auth/register-basic` e `/user/create` (POST) também protegidos
-- Todas as rotas de template do Materio (`/ui/*`, `/forms/*`, etc.) protegidas
-- `Authenticate` middleware redireciona rotas `/portal/*` para `portal.login` (não para o login admin)
-- `RedirectIfAuthenticated` redireciona usuários autenticados no portal para `portal.home`
+### Separação de papéis (Fase 1)
+- Super-admin da plataforma (`is_super_admin`) é **global** e separado do admin de salão.
+- Gestão de empresas (`/tenant/*`) só para super-admin (middleware `platform` + re-check no Livewire).
+- Login admin barra clientes (só entram quem tem `admin`/`employee` em alguma empresa); clientes usam o portal do slug.
 
 ### Fluxo de acesso
 ```
-Visitante → GET /              → Login admin
-Visitante → GET /portal/login  → Login portal
+Visitante → GET /                       → Landing page
+Visitante → GET /admin                  → Login admin
+Visitante → GET /portal/{slug}/login    → Login do portal da empresa
 
-Cliente logado → GET /dashboard     → 403 Sem Permissão
-Admin logado   → GET /portal/agendar → 403 Sem Permissão
-
-Cliente logado → GET /portal/agendar → ✓ OK
-Admin logado   → GET /dashboard       → ✓ OK
+Cliente logado     → GET /dashboard         → 403
+Admin de salão     → GET /tenant            → 403 (não é super-admin)
+Profissional       → GET /dashboard         → 403 (vai p/ /schedule/admin)
+Super-admin        → GET /tenant            → ✓ OK
 ```
 
 ---
 
 ## 10. Credenciais de Desenvolvimento
 
-| Perfil | URL de Acesso | E-mail | Senha |
+`DatabaseSeeder` roda `TestMatrixSeeder`, que monta uma matriz com **duas empresas**:
+**Empresa Padrão** (slug `empresa-padrao`) e **Salão Modelo** (slug `salao-modelo`).
+Todas as senhas são `password`.
+
+| Perfil | URL | E-mail | Empresa |
 |---|---|---|---|
-| Admin | `http://localhost` | `admin@sistema.test` | `password` |
-| Cliente | `http://localhost/portal/login` | `cliente@teste.com` | `password` |
+| Super-admin (plataforma) + admin de salão | `/admin` | `admin@sistema.test` | A |
+| Admin de salão (NÃO super-admin) | `/admin` | `gerente@sistema.test` | A |
+| Profissional (employee) | `/admin` | `profissional@sistema.test` | A |
+| Cliente | `/portal/empresa-padrao/login` | `user1@sistema.test` | A |
+| Admin de salão (NÃO super-admin) | `/admin` | `admin-b@sistema.test` | B |
+| Cliente | `/portal/salao-modelo/login` | `cliente-b@sistema.test` | B |
+
+Só `admin@sistema.test` tem `is_super_admin = true` (único que chega em `/tenant`).
+`gerente@sistema.test` e `admin-b@sistema.test` são admins de salão → 403 em `/tenant`, cada um vê só a própria empresa.
+
+Produção (`ProductionSeeder`, idempotente): `admin@salaofacil.digital` / `admin@2026` (também super-admin).
 
 ---
 
 ## 11. Layouts e Views
 
-```
-resources/views/
-├── layouts/
-│   ├── contentNavbarLayout.blade.php  ← layout do painel admin
-│   └── portal.blade.php               ← layout do portal do cliente
-├── content/
-│   ├── dashboard/dashboards-analytics.blade.php
-│   ├── user/users-list.blade.php
-│   ├── authentications/auth-register-basic.blade.php  ← criar/editar usuário
-│   ├── services/index.blade.php
-│   ├── schedule/
-│   │   ├── admin-agenda.blade.php
-│   │   ├── employee-availability.blade.php
-│   │   └── schedule-create.blade.php
-│   ├── tenant/tenant-create.blade.php
-│   └── reports/index.blade.php
-├── livewire/
-│   ├── services/service-manager.blade.php
-│   ├── schedule/
-│   │   ├── admin-agenda.blade.php
-│   │   └── employee-availability.blade.php
-│   ├── form-create-agenda.blade.php
-│   ├── tenant/form-create-tenant.blade.php
-│   └── reports/agenda-report.blade.php
-└── portal/
-    ├── login.blade.php
-    ├── register.blade.php
-    ├── agendar.blade.php
-    └── meus-agendamentos.blade.php
-```
+- **Admin**: `layouts/contentNavbarLayout.blade.php` (classes Materio)
+- **Portal**: `layouts/portal.blade.php` (Bootstrap 5 via CDN, sem Materio)
+- **Blank**: `layouts/blankLayout.blade.php` (páginas de auth)
+- Menu lateral: `resources/menu/verticalMenu.json`, compartilhado por `MenuServiceProvider`; itens `"platform": true` só aparecem para super-admin.
 
 ---
 
 ## 12. Padrões e Convenções
 
-### Badges de cor no portal
-O portal usa Bootstrap 5 via CDN **sem** as classes customizadas do Materio. Por isso usar `bg-label-*` não funciona. Sempre usar `rgba()` inline:
+### Badges de cor: Admin vs Portal
+O portal não tem as classes Materio (`bg-label-*`). Usar `rgba()` inline no portal; no admin pode usar `bg-label-*`.
 ```html
-<!-- Portal: usar rgba inline -->
-<span style="background:rgba(255,171,0,.15);color:#a07800;">Serviço</span>
-
-<!-- Admin (Materio): pode usar bg-label-* -->
-<span class="badge bg-label-warning">Serviço</span>
+<!-- Portal -->  <span style="background:rgba(255,171,0,.15);color:#a07800;">Serviço</span>
+<!-- Admin  -->  <span class="badge bg-label-warning">Serviço</span>
 ```
 
 ### Confirmação de ações destrutivas
-Sempre usar confirmação inline (Sim/Não) via Livewire, nunca `confirm()` do browser:
-```php
-// No componente Livewire
-public ?int $confirmingDeleteId = null;
-public function confirmDelete(int $id): void { $this->confirmingDeleteId = $id; }
-public function delete(int $id): void { /* faz a ação */ $this->confirmingDeleteId = null; }
-```
+Nunca usar `confirm()` do browser. Sempre confirmação inline via Livewire (`confirmingDeleteId`, `confirmDelete`, `delete`, `dismissDelete`).
 
 ### Isolamento por tenant
 ```php
 $tenantId = session('tenant_id') ?? 1;
-// Sempre filtrar queries por tenant_id
 DB::table('services')->where('tenant_id', $tenantId)->get();
 ```
 
+### Padrão Repository
+Lógica de negócio atrás de interfaces (`RepositoryServiceProvider`): `UserRepositoryInterface`, `PermissionRepositoryInterface`, `ScheduleRepositoryInterface`. Injetar interfaces, não classes concretas.
+
 ---
 
-## 13. Próximas Implementações Sugeridas
+## 13. Próximas Implementações
 
-### Alta prioridade
-- [ ] **Preço nos serviços** — adicionar coluna `price` na tabela `services` e exibir no relatório
-- [ ] **Dashboard com métricas reais** — substituir o dashboard do template por cards com dados do banco (agendamentos hoje, esta semana, cancelamentos)
-- [ ] **Notificação por e-mail** — enviar e-mail ao cliente quando o agendamento for confirmado ou cancelado
-- [ ] **Permissão `employee`** — funcionário deve conseguir ver sua própria agenda (filtrada por ele) no painel admin
+### Concluído na Fase 1 ✅
+- [x] Multi-tenancy ligado por slug e papel por empresa
+- [x] Super-admin da plataforma separado do admin de salão
+- [x] Isolamento de usuários/dados por empresa
+- [x] Profissional (`employee`) com painel escopado aos próprios dados
+- [x] Preço nos serviços + notificação por e-mail ao cliente
+- [x] Matriz de credenciais de teste (2 empresas)
+
+### Fase 2 — sugestões de alta prioridade
+- [ ] **Seletor de empresa (switcher)** no login/painel admin para quem tem papel em mais de uma empresa (hoje cai na primeira)
+- [ ] **Dashboard com métricas reais** (agendamentos hoje/semana, cancelamentos) escopadas por tenant
+- [ ] **Testes de isolamento cruzado** (A↔B) nos componentes Livewire
 
 ### Média prioridade
-- [ ] **Paginação na lista de usuários e relatório** — para quando houver muitos registros
-- [ ] **Perfil do cliente** — editar nome, e-mail e senha no portal
-- [ ] **Reagendamento** — permitir ao cliente remarcar em vez de cancelar
-- [ ] **Intervalo entre atendimentos** — configurar duração de cada serviço para evitar conflitos de horário
+- [ ] Paginação em listas/relatórios
+- [ ] Perfil do cliente (editar nome/e-mail/senha no portal)
+- [ ] Reagendamento (remarcar em vez de cancelar)
+- [ ] Duração por serviço para evitar conflito de horário
 
 ### Baixa prioridade
-- [ ] **Multi-tenant completo** — tela de seleção de tenant no login admin
-- [ ] **Exportar relatório para Excel** — usando `maatwebsite/excel`
-- [ ] **PWA no portal** — para o cliente usar como app no celular
+- [ ] Exportar relatório para Excel (`maatwebsite/excel`)
+- [ ] PWA no portal
+- [ ] Área financeira (tabelas `financial_*` já existem, falta UI)
 
 ---
 
 ## 14. Comandos Úteis
 
 ```bash
-# Tinker — criar usuário cliente manualmente
-php artisan tinker --execute="
-\$user = App\Models\User::create(['name'=>'Nome','email'=>'e@mail.com','password'=>bcrypt('password')]);
-\$permId = DB::table('permissions')->where('name','client')->value('id');
-DB::table('user_permissions')->insert(['tenant_id'=>1,'user_id'=>\$user->id,'code_permission'=>\$permId,'created_at'=>now(),'updated_at'=>now()]);
-echo 'OK';
-"
-
 # Ver rotas do portal
 php artisan route:list --path=portal -v
 
 # Limpar caches
 php artisan route:clear && php artisan config:clear && php artisan view:clear
 
-# Rodar migrations novas
+# Migrations / seed
 php artisan migrate
+php artisan db:seed                            # TestMatrixSeeder (dev, 2 empresas)
+php artisan db:seed --class=ProductionSeeder   # produção
 
-# Push via SSH
-git add -A && git commit -m "mensagem" && git push origin main
+# Style
+./vendor/bin/pint
+
+# Testes
+php artisan test
 ```
 
 ---
 
-*Documentação gerada ao final da sessão de desenvolvimento — Junho/2026*
+*Documentação atualizada ao final da Fase 1 (multi-tenancy) — Junho/2026*
