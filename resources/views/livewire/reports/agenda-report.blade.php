@@ -133,6 +133,21 @@
         </div>
     </div>
 
+    <div class="col-6 col-md-3">
+        <div class="card h-100">
+            <div class="card-body d-flex align-items-center gap-3">
+                <div class="d-flex align-items-center justify-content-center"
+                     style="width:46px;height:46px;border-radius:50%;background:rgba(105,108,255,.15);color:#696cff;flex-shrink:0;">
+                    <i class="mdi mdi-cash-multiple mdi-24px"></i>
+                </div>
+                <div>
+                    <div class="text-muted small">Faturamento <span class="text-muted" style="font-size:.7rem">(realizados)</span></div>
+                    <h3 class="mb-0 fw-bold" style="color:#696cff;">R$ {{ number_format($revenue, 2, ',', '.') }}</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
 </div>
 
 {{-- Tabela --}}
@@ -173,6 +188,7 @@
                             <th>Serviço</th>
                             <th>Profissional</th>
                             <th>Status</th>
+                            <th class="text-end pe-4">Valor</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -197,9 +213,22 @@
                                         <span class="badge bg-label-success">Realizado</span>
                                     @endif
                                 </td>
+                                <td class="text-end pe-4 {{ $a->cancel ? 'text-muted text-decoration-line-through' : 'fw-semibold' }}">
+                                    @if($a->service_price !== null)
+                                        R$ {{ number_format($a->service_price, 2, ',', '.') }}
+                                    @else
+                                        <span class="text-muted">—</span>
+                                    @endif
+                                </td>
                             </tr>
                         @endforeach
                     </tbody>
+                    <tfoot class="table-light">
+                        <tr>
+                            <th colspan="6" class="text-end">Total (realizados)</th>
+                            <th class="text-end pe-4">R$ {{ number_format($revenue, 2, ',', '.') }}</th>
+                        </tr>
+                    </tfoot>
                 </table>
             </div>
         @endif

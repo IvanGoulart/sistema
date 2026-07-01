@@ -17,7 +17,12 @@ class Authenticate extends Middleware
         }
 
         if ($request->is('portal/*') || $request->is('portal')) {
-            return route('portal.login');
+            // O slug vem da rota atual (/portal/{tenantSlug}/...). Passamos explicitamente
+            // porque este middleware roda antes do ResolveTenant (que define o URL default),
+            // então route('portal.login') sozinho ficaria sem o tenantSlug.
+            $slug = $request->route('tenantSlug');
+
+            return $slug ? route('portal.login', ['tenantSlug' => $slug]) : route('landing');
         }
 
         return route('auth-login-basic');

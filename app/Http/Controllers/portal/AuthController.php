@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Portal;
 
 use App\Http\Controllers\Controller;
 use App\Models\Permission;
-use App\Models\Tenant;
 use App\Models\TenantUser;
 use App\Models\User;
 use App\Models\UserPermission;
@@ -12,7 +11,6 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Str;
 
 class AuthController extends Controller
 {
@@ -67,7 +65,11 @@ class AuthController extends Controller
             'password' => ['required', 'min:6', 'confirmed'],
         ]);
 
-        DB::transaction(function () use ($data, &$user, &$tenant) {
+        // O cadastro pelo portal cria um CLIENTE do salão do slug atual
+        // (resolvido pelo middleware ResolveTenant), não uma nova empresa.
+        $tenant = app('tenant');
+
+        DB::transaction(function () use ($data, $tenant, &$user) {
             $user = User::create([
                 'name' => $data['name'],
                 'email' => $data['email'],
@@ -75,16 +77,10 @@ class AuthController extends Controller
                 'active' => 1,
             ]);
 
-            $tenant = Tenant::create([
-                'name' => $data['name'],
-                'slug' => Str::slug($data['name']).'-'.Str::lower(Str::random(5)),
-                'is_active' => true,
-            ]);
-
             TenantUser::create([
                 'tenant_id' => $tenant->id,
                 'user_id' => $user->id,
-                'role' => 'owner',
+                'role' => 'client',
                 'is_active' => true,
             ]);
 

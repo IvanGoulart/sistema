@@ -9,41 +9,50 @@ use Livewire\Component;
 class AgendaReport extends Component
 {
     public string $dateStart = '';
-    public string $dateEnd   = '';
+
+    public string $dateEnd = '';
+
     public string $employeeId = '';
-    public string $serviceId  = '';
+
+    public string $serviceId = '';
 
     public bool $generated = false;
 
     public $appointments;
-    public int $total      = 0;
-    public int $done       = 0;
-    public int $cancelled  = 0;
+
+    public int $total = 0;
+
+    public int $done = 0;
+
+    public int $cancelled = 0;
+
     public float $cancelRate = 0;
+
+    public float $revenue = 0;
 
     public function mount(): void
     {
         $this->dateStart = Carbon::now()->startOfMonth()->format('Y-m-d');
-        $this->dateEnd   = Carbon::now()->endOfMonth()->format('Y-m-d');
+        $this->dateEnd = Carbon::now()->endOfMonth()->format('Y-m-d');
     }
 
     public function generate(): void
     {
         $this->validate([
             'dateStart' => 'required|date',
-            'dateEnd'   => 'required|date|after_or_equal:dateStart',
+            'dateEnd' => 'required|date|after_or_equal:dateStart',
         ], [
-            'dateStart.required'        => 'Informe a data inicial.',
-            'dateEnd.required'          => 'Informe a data final.',
-            'dateEnd.after_or_equal'    => 'A data final deve ser igual ou posterior à inicial.',
+            'dateStart.required' => 'Informe a data inicial.',
+            'dateEnd.required' => 'Informe a data final.',
+            'dateEnd.after_or_equal' => 'A data final deve ser igual ou posterior à inicial.',
         ]);
 
         $tenantId = session('tenant_id') ?? 1;
 
         $query = DB::table('schedules')
             ->join('users as client', 'schedules.client_id', '=', 'client.id')
-            ->join('users as emp',    'schedules.employee_id', '=', 'emp.id')
-            ->join('services',        'schedules.service_id', '=', 'services.id')
+            ->join('users as emp', 'schedules.employee_id', '=', 'emp.id')
+            ->join('services', 'schedules.service_id', '=', 'services.id')
             ->where('services.tenant_id', $tenantId)
             ->whereBetween('schedules.day', [$this->dateStart, $this->dateEnd])
             ->select(
@@ -53,7 +62,8 @@ class AgendaReport extends Component
                 'schedules.cancel',
                 'client.name as client_name',
                 'emp.name as employee_name',
-                'services.name as service_name'
+                'services.name as service_name',
+                'services.price as service_price'
             )
             ->orderBy('schedules.day')
             ->orderBy('schedules.hour');
@@ -67,19 +77,25 @@ class AgendaReport extends Component
         }
 
         $this->appointments = $query->get();
-        $this->total        = $this->appointments->count();
-        $this->cancelled    = $this->appointments->where('cancel', true)->count();
-        $this->done         = $this->total - $this->cancelled;
-        $this->cancelRate   = $this->total > 0
+        $this->total = $this->appointments->count();
+        $this->cancelled = $this->appointments->where('cancel', true)->count();
+        $this->done = $this->total - $this->cancelled;
+        $this->cancelRate = $this->total > 0
             ? round(($this->cancelled / $this->total) * 100, 1)
             : 0;
+
+        // Faturamento: soma dos valores apenas dos agendamentos realizados
+        // (cancelados não geram receita). price pode ser NULL → tratado como 0.
+        $this->revenue = (float) $this->appointments
+            ->where('cancel', false)
+            ->sum('service_price');
 
         $this->generated = true;
     }
 
     public function render()
     {
-        $tenantId  = session('tenant_id') ?? 1;
+        $tenantId = session('tenant_id') ?? 1;
 
         $employees = DB::table('users')
             ->join('user_permissions', 'users.id', '=', 'user_permissions.user_id')
